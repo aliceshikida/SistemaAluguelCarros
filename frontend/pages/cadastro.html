@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cadastro</title>
+    <link rel="stylesheet" href="/css/styles.css" />
+  </head>
+  <body>
+    <main class="container">
+      <div class="card">
+        <h2>Cadastro de Usuário</h2>
+        <p class="muted">Cadastro prévio é obrigatório para uso do sistema.</p>
+        <div id="feedback"></div>
+
+        <form onsubmit="handleCadastro(event)">
+          <div class="row">
+            <div>
+              <label>Perfil</label>
+              <select id="role">
+                <option value="CLIENTE">Cliente</option>
+                <option value="EMPRESA">Empresa</option>
+                <option value="BANCO">Banco</option>
+              </select>
+            </div>
+            <div>
+              <label>Nome</label>
+              <input id="nome" required />
+            </div>
+          </div>
+
+          <div class="row">
+            <div>
+              <label>CPF</label>
+              <input id="cpf" required />
+            </div>
+            <div>
+              <label>RG</label>
+              <input id="rg" required />
+            </div>
+          </div>
+
+          <label>Endereço</label>
+          <input id="endereco" required />
+
+          <div class="row">
+            <div>
+              <label>Profissão</label>
+              <input id="profissao" required />
+            </div>
+            <div>
+              <label>Senha</label>
+              <input id="password" type="password" required minlength="4" />
+            </div>
+          </div>
+
+          <h3>Rendimentos (máx. 3, apenas cliente)</h3>
+          <div class="row"><div><label>Empregador 1</label><input id="emp1" /></div><div><label>Rendimento 1</label><input id="renda1" type="number" step="0.01" /></div></div>
+          <div class="row"><div><label>Empregador 2</label><input id="emp2" /></div><div><label>Rendimento 2</label><input id="renda2" type="number" step="0.01" /></div></div>
+          <div class="row"><div><label>Empregador 3</label><input id="emp3" /></div><div><label>Rendimento 3</label><input id="renda3" type="number" step="0.01" /></div></div>
+
+          <button type="submit">Cadastrar</button>
+        </form>
+      </div>
+
+      <div class="actions" style="justify-content:flex-start;">
+        <a class="btn secondary" href="/">Voltar</a>
+      </div>
+    </main>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/auth.js"></script>
+  </body>
+</html>

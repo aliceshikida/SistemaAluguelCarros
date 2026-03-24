@@ -1,0 +1,32 @@
+@startuml
+package "Frontend" {
+  [pages]
+  [js]
+  [css]
+}
+
+package "Backend" {
+  package "routes" {}
+  package "controller" {}
+  package "service" {}
+  package "repository" {}
+  package "model" {}
+  package "dto" {}
+  package "config" {}
+  package "exception" {}
+  package "middleware" {}
+}
+
+package "Data" {
+  [SQLite]
+  [Seed]
+}
+
+[pages] --> [js]
+[js] --> [routes]
+[routes] --> [controller]
+[controller] --> [service]
+[service] --> [repository]
+[repository] --> [SQLite]
+[Seed] --> [SQLite]
+@enduml

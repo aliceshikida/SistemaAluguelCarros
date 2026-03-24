@@ -1,0 +1,52 @@
+@startuml
+skinparam classAttributeIconSize 0
+
+enum Role {
+  CLIENTE
+  EMPRESA
+  BANCO
+}
+
+enum StatusPedido {
+  PENDENTE
+  EM_ANALISE
+  APROVADO
+  REPROVADO
+  CANCELADO
+  CONTRATO_EXECUTADO
+}
+
+class Usuario {
+  +id: Long
+  +nome: String
+  +cpf: String
+  +rg: String
+  +endereco: String
+  +profissao: String
+  +password: String
+  +role: Role
+}
+class Cliente
+class Agente
+class Empresa
+class Banco
+class PedidoAluguel
+class Contrato
+class ContratoCredito
+class Automovel
+class Empregador
+class Rendimento
+
+Usuario <|-- Cliente
+Usuario <|-- Agente
+Agente <|-- Empresa
+Agente <|-- Banco
+Cliente "1" -- "0..*" PedidoAluguel : cria
+Agente "1" -- "0..*" PedidoAluguel : avalia
+PedidoAluguel "1" -- "0..1" Contrato : gera
+Contrato "1" -- "0..1" ContratoCredito : possui
+Banco "1" -- "0..*" ContratoCredito : concede
+PedidoAluguel "1" -- "1" Automovel : referencia
+Cliente "1" -- "0..3" Rendimento : possui
+Empregador "1" -- "0..*" Rendimento : origem
+@enduml

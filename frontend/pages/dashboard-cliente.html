@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard Cliente</title>
+    <link rel="stylesheet" href="/css/styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <strong>Cliente: <span id="nomeUsuario"></span></strong>
+      <button onclick="logout()">Sair</button>
+    </header>
+    <main class="container">
+      <section class="card">
+        <h2>Novo pedido de aluguel</h2>
+        <form onsubmit="criarPedido(event)">
+          <div class="row"><div><label>Automóvel</label><select id="automovel_id" required></select></div><div><label>Tipo de contrato</label><select id="tipo_contrato" required><option value="PADRAO">Padrão</option><option value="COM_CREDITO">Com crédito</option></select></div></div>
+          <div id="novoAutomovelBox" class="card" style="display:none; margin-top: 14px;">
+            <h3>Adicionar novo automóvel</h3>
+            <div class="row">
+              <div><label>Matrícula</label><input id="novo_matricula" /></div>
+              <div><label>Ano</label><input id="novo_ano" type="number" min="1900" max="2100" /></div>
+            </div>
+            <div class="row">
+              <div><label>Marca</label><input id="novo_marca" /></div>
+              <div><label>Modelo</label><input id="novo_modelo" /></div>
+            </div>
+            <div class="row">
+              <div><label>Placa</label><input id="novo_placa" /></div>
+              <div>
+                <label>Proprietário</label>
+                <select id="novo_proprietario">
+                  <option value="CLIENTE">Cliente</option>
+                  <option value="EMPRESA">Empresa</option>
+                  <option value="BANCO">Banco</option>
+                </select>
+              </div>
+            </div>
+            <button type="button" onclick="adicionarAutomovel()">Salvar automóvel</button>
+          </div>
+          <div class="row"><div><label>Início</label><input id="periodo_inicio" type="date" required /></div><div><label>Fim</label><input id="periodo_fim" type="date" required /></div></div>
+          <label>Detalhes</label><textarea id="detalhes"></textarea>
+          <button type="submit">Criar pedido</button>
+        </form>
+      </section>
+      <section class="card">
+        <h2>Seus pedidos</h2>
+        <table class="table"><thead><tr><th>ID</th><th>Automóvel</th><th>Período</th><th>Status</th><th>Ações</th></tr></thead><tbody id="pedidosBody"></tbody></table>
+      </section>
+      <section class="card">
+        <h2>Rendimentos cadastrados</h2>
+        <ul id="financeiro"></ul>
+      </section>
+    </main>
+    <script src="/js/api.js"></script>
+    <script src="/js/cliente.js"></script>
+  </body>
+</html>
