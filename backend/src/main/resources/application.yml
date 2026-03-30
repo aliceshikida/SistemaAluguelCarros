@@ -1,6 +1,13 @@
 micronaut:
   application:
     name: sistemaAluguelCarros
+  server:
+    cors:
+      enabled: true
+      configurations:
+        web:
+          allowedOrigins:
+            - "http://localhost:5173"
 
 datasources:
   default:
@@ -18,11 +25,7 @@ jpa:
           auto: update
         show_sql: true
 
-micronaut:
-  server:
-    cors:
-      enabled: true
-      configurations:
-        web:
-          allowedOrigins:
-            - "http://localhost:5173" # Porta padrão do Vite
+app:
+  jwt:
+    secret: "chave-super-secreta-minimo-32-caracteres-para-hs256!!"
+    expiration-seconds: 86400

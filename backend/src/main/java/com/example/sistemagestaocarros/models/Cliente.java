@@ -1,5 +1,6 @@
 package com.example.sistemagestaocarros.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import java.util.List;
 
@@ -31,6 +32,7 @@ public class Cliente extends Usuario {
     // Novos Getters e Setters das listas
     public List<Rendimento> getRendimentos() { return rendimentos; }
     public void setRendimentos(List<Rendimento> rendimentos) { this.rendimentos = rendimentos; }
+    @JsonIgnore
     public List<PedidoAluguel> getPedidos() { return pedidos; }
     public void setPedidos(List<PedidoAluguel> pedidos) { this.pedidos = pedidos; }
 }

@@ -1,5 +1,6 @@
 package com.example.sistemagestaocarros.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 @Entity
@@ -37,6 +38,11 @@ public class Automovel {
     public void setPlaca(String placa) { this.placa = placa; }
 
     // Novos Getters e Setters
+    @JsonIgnore
     public Empresa getEmpresa() { return empresa; }
     public void setEmpresa(Empresa empresa) { this.empresa = empresa; }
+
+    public Integer getEmpresaId() {
+        return empresa != null ? empresa.getId() : null;
+    }
 }

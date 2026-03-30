@@ -1,5 +1,6 @@
 package com.example.sistemagestaocarros.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import java.util.List;
 
@@ -25,6 +26,7 @@ public class Empresa {
     public void setCnpj(String cnpj) { this.cnpj = cnpj; }
 
     // Novos Getters e Setters
+    @JsonIgnore
     public List<Automovel> getAutomoveis() { return automoveis; }
     public void setAutomoveis(List<Automovel> automoveis) { this.automoveis = automoveis; }
 }

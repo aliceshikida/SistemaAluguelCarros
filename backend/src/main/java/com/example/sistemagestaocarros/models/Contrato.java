@@ -1,5 +1,6 @@
 package com.example.sistemagestaocarros.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import java.util.Date;
 
@@ -45,8 +46,14 @@ public class Contrato {
     public void setDataFim(Date dataFim) { this.dataFim = dataFim; }
 
     // Novos Getters e Setters
+    @JsonIgnore
     public PedidoAluguel getPedidoAluguel() { return pedidoAluguel; }
     public void setPedidoAluguel(PedidoAluguel pedidoAluguel) { this.pedidoAluguel = pedidoAluguel; }
+
+    /** Exposto no JSON com id do pedido (evita ciclo com pedido.contrato) */
+    public Integer getPedidoId() {
+        return pedidoAluguel != null ? pedidoAluguel.getIdPedido() : null;
+    }
     public Automovel getAutomovel() { return automovel; }
     public void setAutomovel(Automovel automovel) { this.automovel = automovel; }
     public ContratoCredito getContratoCredito() { return contratoCredito; }

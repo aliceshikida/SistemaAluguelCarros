@@ -10,9 +10,9 @@ Projeto acadêmico completo para apoio à gestão de aluguéis de automóveis, c
 Permitir que clientes criem, consultem, modifiquem e cancelem pedidos de aluguel pela Internet, enquanto agentes (empresas e bancos) analisam financeiramente os pedidos, aprovam/reprovam e executam contratos.
 
 ## Tecnologias utilizadas
-- Backend: Node.js + Express
-- Frontend: HTML, CSS e JavaScript puro
-- Banco de dados: SQLite
+- Backend: Java 17 + Micronaut 4 (Maven)
+- Frontend: React + Vite + Tailwind
+- Banco de dados: H2 (em memória, perfil dev)
 
 ## Estrutura de pastas
 ```text
@@ -97,21 +97,27 @@ Credenciais iniciais de exemplo (seed):
 - Banco: CPF `44444444444` | Senha `44444444444`
 
 ## Instruções para rodar localmente
-1. Acesse o backend:
-   ```bash
+
+**Backend (Micronaut)** — execute sempre a partir da pasta `backend` (lá está o `mvnw.bat`):
+
+1. Defina `JAVA_HOME` para um JDK 17 ou 21 (ex.: `C:\Program Files\Java\jdk-21.0.10` no Windows).
+2. No PowerShell:
+   ```powershell
    cd backend
+   $env:JAVA_HOME = "C:\Program Files\Java\jdk-21.0.10"
+   .\mvnw.bat mn:run
    ```
-2. Instale dependências:
-   ```bash
-   npm install
-   ```
-3. Execute:
-   ```bash
-   npm start
-   ```
-4. Abra no navegador:
-   - Frontend: http://localhost:3000
-   - API health: http://localhost:3000/api/health
+3. API: [http://localhost:8080](http://localhost:8080) (mensagem na raiz) e, por exemplo, [http://localhost:8080/api/clientes](http://localhost:8080/api/clientes).
+
+**Frontend (Vite)** — em outro terminal:
+
+```powershell
+cd frontend
+npm install
+npm run dev
+```
+
+Abra o endereço que o Vite mostrar (geralmente [http://localhost:5173](http://localhost:5173)). O CORS do backend já permite essa origem.
 
 ## Arquitetura adotada (resumo)
 Arquitetura em camadas (`routes`, `controller`, `service`, `repository`) para separar responsabilidades, facilitar manutenção e apresentação acadêmica.

@@ -1,5 +1,6 @@
 package com.example.sistemagestaocarros.models;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 
 @Entity
@@ -13,6 +14,8 @@ public abstract class Usuario {
     private String nome;
     private String endereco;
     private String login;
+
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String senha;
 
     // Construtor vazio (Obrigatório para o JPA funcionar)

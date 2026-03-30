@@ -1,5 +1,6 @@
 package com.example.sistemagestaocarros.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 @Entity
@@ -12,6 +13,9 @@ public class ContratoCredito {
     private Double valor;
     private Double taxajuros;
     private Integer prazo;
+
+    /** PENDENTE, ATIVO, REJEITADO, CANCELADO */
+    private String status;
 
     // NOVO: 1 para 1 voltando para o Contrato
     @OneToOne
@@ -35,9 +39,17 @@ public class ContratoCredito {
     public Integer getPrazo() { return prazo; }
     public void setPrazo(Integer prazo) { this.prazo = prazo; }
 
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
+
     // Novos Getters e Setters
+    @JsonIgnore
     public Contrato getContrato() { return contrato; }
     public void setContrato(Contrato contrato) { this.contrato = contrato; }
+
+    public Integer getContratoId() {
+        return contrato != null ? contrato.getIdContrato() : null;
+    }
     public Banco getBanco() { return banco; }
     public void setBanco(Banco banco) { this.banco = banco; }
 }
