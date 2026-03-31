@@ -1,12 +1,13 @@
 package com.example.sistemagestaocarros.repositories;
 
 import com.example.sistemagestaocarros.models.Cliente;
-
 import io.micronaut.data.annotation.Repository;
 import io.micronaut.data.repository.CrudRepository;
+import java.util.Optional;
 
 @Repository
 public interface ClienteRepository extends CrudRepository<Cliente, Integer> {
-    // Só de estender CrudRepository, o Micronaut já cria automaticamente 
-    // métodos como: save(), findAll(), findById(), update() e deleteById()
+
+    Optional<Cliente> findByLogin(String login);
+    Optional<Cliente> findByCpf(String cpf);
 }

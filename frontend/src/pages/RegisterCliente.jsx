@@ -69,7 +69,13 @@ export default function RegisterCliente() {
       });
       navigate('/login');
     } catch (ex) {
-      const msg = ex.response?.data?.message || ex.response?.data || ex.message;
+      const d = ex.response?.data;
+      const msg =
+        (typeof d?.message === 'string' && d.message) ||
+        d?._embedded?.errors?.[0]?.message ||
+        (typeof d === 'string' ? d : null) ||
+        ex.message ||
+        'Erro ao cadastrar';
       setErr(typeof msg === 'string' ? msg : 'Erro ao cadastrar');
     } finally {
       setLoading(false);

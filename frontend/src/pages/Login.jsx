@@ -25,7 +25,15 @@ export default function Login() {
       await login(loginField.trim(), senha);
       navigate(from, { replace: true });
     } catch (ex) {
-      const msg = ex.response?.data?.message || ex.response?.data || ex.message || 'Falha no login';
+      const d = ex.response?.data;
+      // Micronaut coloca o detalhe em _embedded.errors; message no topo costuma ser só "Unauthorized"
+      const msg =
+        d?._embedded?.errors?.[0]?.message ||
+        (typeof d?.message === 'string' && d.message !== 'Unauthorized' ? d.message : null) ||
+        (ex.response?.status === 401 ? 'Login ou senha inválidos.' : null) ||
+        (typeof d === 'string' ? d : null) ||
+        ex.message ||
+        'Falha no login';
       setErr(typeof msg === 'string' ? msg : 'Credenciais inválidas');
     } finally {
       setLoading(false);

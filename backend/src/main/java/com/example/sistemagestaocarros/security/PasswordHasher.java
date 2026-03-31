@@ -1,18 +1,18 @@
 package com.example.sistemagestaocarros.security;
 
+import at.favre.lib.crypto.bcrypt.BCrypt;
 import jakarta.inject.Singleton;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 @Singleton
 public class PasswordHasher {
 
-    private final BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+    private static final int COST = 10;
 
     public String hash(String raw) {
-        return encoder.encode(raw);
+        return BCrypt.withDefaults().hashToString(COST, raw.toCharArray());
     }
 
     public boolean matches(String raw, String hash) {
-        return encoder.matches(raw, hash);
+        return BCrypt.verifyer().verify(raw.toCharArray(), hash).verified;
     }
 }
