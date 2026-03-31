@@ -1,17 +1,23 @@
 package com.example.sistemagestaocarros.services;
 
+import com.example.sistemagestaocarros.AgenteTipos;
 import com.example.sistemagestaocarros.Roles;
 import com.example.sistemagestaocarros.dto.LoginRequest;
 import com.example.sistemagestaocarros.dto.LoginResponse;
 import com.example.sistemagestaocarros.dto.RegisterClienteRequest;
+import com.example.sistemagestaocarros.dto.RegisterRequest;
 import com.example.sistemagestaocarros.dto.RendimentoItemDto;
 import com.example.sistemagestaocarros.models.Agente;
+import com.example.sistemagestaocarros.models.Banco;
 import com.example.sistemagestaocarros.models.Cliente;
+import com.example.sistemagestaocarros.models.Empresa;
 import com.example.sistemagestaocarros.models.Empregador;
 import com.example.sistemagestaocarros.models.Rendimento;
 import com.example.sistemagestaocarros.repositories.AgenteRepository;
+import com.example.sistemagestaocarros.repositories.BancoRepository;
 import com.example.sistemagestaocarros.repositories.ClienteRepository;
 import com.example.sistemagestaocarros.repositories.EmpregadorRepository;
+import com.example.sistemagestaocarros.repositories.EmpresaRepository;
 import com.example.sistemagestaocarros.repositories.RendimentoRepository;
 import com.example.sistemagestaocarros.security.JwtTokenService;
 import com.example.sistemagestaocarros.security.PasswordHasher;
@@ -29,6 +35,8 @@ public class AuthService {
 
     private final ClienteRepository clienteRepository;
     private final AgenteRepository agenteRepository;
+    private final BancoRepository bancoRepository;
+    private final EmpresaRepository empresaRepository;
     private final EmpregadorRepository empregadorRepository;
     private final RendimentoRepository rendimentoRepository;
     private final PasswordHasher passwordHasher;
@@ -38,6 +46,8 @@ public class AuthService {
     public AuthService(
         ClienteRepository clienteRepository,
         AgenteRepository agenteRepository,
+        BancoRepository bancoRepository,
+        EmpresaRepository empresaRepository,
         EmpregadorRepository empregadorRepository,
         RendimentoRepository rendimentoRepository,
         PasswordHasher passwordHasher,
@@ -46,6 +56,8 @@ public class AuthService {
     ) {
         this.clienteRepository = clienteRepository;
         this.agenteRepository = agenteRepository;
+        this.bancoRepository = bancoRepository;
+        this.empresaRepository = empresaRepository;
         this.empregadorRepository = empregadorRepository;
         this.rendimentoRepository = rendimentoRepository;
         this.passwordHasher = passwordHasher;
@@ -53,7 +65,33 @@ public class AuthService {
         this.expirationSeconds = expirationSeconds;
     }
 
+    public void register(RegisterRequest req) {
+        if (req.nome() == null || req.nome().trim().isEmpty()
+            || req.login() == null || req.login().trim().isEmpty()
+            || req.senha() == null || req.senha().isEmpty()) {
+            throw new HttpStatusException(HttpStatus.BAD_REQUEST, "Nome, login e senha são obrigatórios");
+        }
+        String tipoUsuario = req.tipoUsuario() == null ? "CLIENTE" : req.tipoUsuario().trim().toUpperCase();
+        if (Roles.AGENTE.equals(tipoUsuario)) {
+            registerAgente(req);
+            return;
+        }
+        registerCliente(new RegisterClienteRequest(
+            req.nome(),
+            req.endereco(),
+            req.login(),
+            req.senha(),
+            req.rg(),
+            req.cpf(),
+            req.profissao(),
+            req.rendimentos()
+        ));
+    }
+
     private static String normalizeLogin(String raw) {
+        if (raw == null) {
+            return "";
+        }
         String trimmed = raw.trim();
         // Se for um login composto apenas por dígitos/pontuação (CPF), salva/consulta sem máscara.
         if (trimmed.matches("[0-9.\\-\\s]+")) {
@@ -179,5 +217,40 @@ public class AuthService {
             rendimentoRepository.save(ren);
         }
         return clienteRepository.findById(c.getId()).orElse(c);
+    }
+
+    @Transactional
+    public Agente registerAgente(RegisterRequest req) {
+        String tipoAgente = req.tipoAgente() == null ? "" : req.tipoAgente().trim().toUpperCase();
+        if (!AgenteTipos.EMPRESA.equals(tipoAgente) && !AgenteTipos.BANCO.equals(tipoAgente)) {
+            throw new HttpStatusException(HttpStatus.BAD_REQUEST, "Tipo de agente deve ser EMPRESA ou BANCO");
+        }
+        String login = normalizeLogin(req.login());
+        if (clienteRepository.findByLogin(login).isPresent()
+            || agenteRepository.findByLogin(login).isPresent()) {
+            throw new HttpStatusException(HttpStatus.BAD_REQUEST, "Login já cadastrado");
+        }
+        Agente a = new Agente();
+        a.setTipo(tipoAgente);
+        a.setNome(req.nome());
+        a.setNomeFantasia(req.nomeFantasia());
+        a.setEndereco(req.endereco());
+        a.setLogin(login);
+        a.setSenha(passwordHasher.hash(req.senha()));
+        a.setIdAgente(req.idAgente());
+
+        if (AgenteTipos.BANCO.equals(tipoAgente)) {
+            Banco banco = new Banco();
+            banco.setCnpj(normalizeDigits(req.cnpj()));
+            bancoRepository.save(banco);
+            a.setBanco(banco);
+        } else {
+            Empresa empresa = new Empresa();
+            empresa.setCnpj(normalizeDigits(req.cnpj()));
+            empresaRepository.save(empresa);
+            a.setEmpresa(empresa);
+        }
+        agenteRepository.save(a);
+        return agenteRepository.findById(a.getId()).orElse(a);
     }
 }

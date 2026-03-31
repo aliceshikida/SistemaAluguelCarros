@@ -4,7 +4,6 @@ import io.micronaut.core.order.Ordered;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.HttpStatus;
-import io.micronaut.http.MutableHttpRequest;
 import io.micronaut.http.annotation.Filter;
 import io.micronaut.http.filter.HttpServerFilter;
 import io.micronaut.http.filter.ServerFilterChain;
@@ -38,13 +37,10 @@ public class JwtAuthenticationFilter implements HttpServerFilter, Ordered {
         String token = auth.substring(7).trim();
         try {
             JwtClaims claims = jwtTokenService.parse(token);
-            MutableHttpRequest<?> mutable = request instanceof MutableHttpRequest<?>
-                ? (MutableHttpRequest<?>) request
-                : request.mutate();
-            mutable.setAttribute("userId", claims.userId());
-            mutable.setAttribute("userRole", claims.role());
-            mutable.setAttribute("tipoAgente", claims.tipoAgente());
-            return chain.proceed(mutable);
+            request.setAttribute("userId", claims.userId());
+            request.setAttribute("userRole", claims.role());
+            request.setAttribute("tipoAgente", claims.tipoAgente());
+            return chain.proceed(request);
         } catch (Exception e) {
             return io.micronaut.core.async.publisher.Publishers.just(HttpResponse.status(HttpStatus.UNAUTHORIZED));
         }

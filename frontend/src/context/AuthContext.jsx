@@ -37,7 +37,7 @@ export function AuthProvider({ children }) {
     return next;
   }, []);
 
-  const registerCliente = useCallback(async (payload) => {
+  const register = useCallback(async (payload) => {
     await api.post('/api/auth/register', payload);
   }, []);
 
@@ -49,9 +49,10 @@ export function AuthProvider({ children }) {
       isAuthenticated: !!auth?.token,
       login,
       logout,
-      registerCliente,
+      register,
+      registerCliente: register,
     }),
-    [auth, login, logout, registerCliente]
+    [auth, login, logout, register]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

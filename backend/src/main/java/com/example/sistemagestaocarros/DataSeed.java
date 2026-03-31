@@ -2,6 +2,7 @@ package com.example.sistemagestaocarros;
 
 import com.example.sistemagestaocarros.models.*;
 import com.example.sistemagestaocarros.repositories.*;
+import io.micronaut.context.annotation.Context;
 import com.example.sistemagestaocarros.security.PasswordHasher;
 import jakarta.annotation.PostConstruct;
 import jakarta.inject.Singleton;
@@ -11,6 +12,7 @@ import java.util.Date;
 import java.util.List;
 
 @Singleton
+@Context
 public class DataSeed {
 
     private final EmpresaRepository empresaRepository;
@@ -54,18 +56,25 @@ public class DataSeed {
     @PostConstruct
     @Transactional
     public void seed() {
-        if (empresaRepository.count() > 0) {
-            return;
+        Empresa emp = empresaRepository.findAll().iterator().hasNext()
+            ? empresaRepository.findAll().iterator().next()
+            : null;
+        if (emp == null) {
+            emp = new Empresa();
+            emp.setCnpj("11111111000111");
+            empresaRepository.save(emp);
         }
-        Empresa emp = new Empresa();
-        emp.setCnpj("11111111000111");
-        empresaRepository.save(emp);
 
-        Banco ban = new Banco();
-        ban.setCnpj("22222222000111");
-        bancoRepository.save(ban);
+        Banco ban = bancoRepository.findAll().iterator().hasNext()
+            ? bancoRepository.findAll().iterator().next()
+            : null;
+        if (ban == null) {
+            ban = new Banco();
+            ban.setCnpj("22222222000111");
+            bancoRepository.save(ban);
+        }
 
-        Agente agEmp = new Agente();
+        Agente agEmp = agenteRepository.findByLogin("33333333333").orElseGet(Agente::new);
         agEmp.setTipo(AgenteTipos.EMPRESA);
         agEmp.setNome("Locadora Exemplo S.A.");
         agEmp.setNomeFantasia("Locadora Exemplo");
@@ -73,9 +82,10 @@ public class DataSeed {
         agEmp.setLogin("33333333333");
         agEmp.setSenha(passwordHasher.hash("33333333333"));
         agEmp.setIdAgente(1);
+        agEmp.setEmpresa(emp);
         agenteRepository.save(agEmp);
 
-        Agente agBan = new Agente();
+        Agente agBan = agenteRepository.findByLogin("44444444444").orElseGet(Agente::new);
         agBan.setTipo(AgenteTipos.BANCO);
         agBan.setNome("Banco Exemplo");
         agBan.setNomeFantasia("Banco Exemplo");
@@ -86,7 +96,7 @@ public class DataSeed {
         agBan.setIdAgente(2);
         agenteRepository.save(agBan);
 
-        Cliente c1 = new Cliente();
+        Cliente c1 = clienteRepository.findByLogin("11111111111").orElseGet(Cliente::new);
         c1.setNome("Cliente Um");
         c1.setEndereco("Rua A, 10");
         c1.setLogin("11111111111");
@@ -106,7 +116,7 @@ public class DataSeed {
         r1.setDescricao("Salário");
         rendimentoRepository.save(r1);
 
-        Cliente c2 = new Cliente();
+        Cliente c2 = clienteRepository.findByLogin("22222222222").orElseGet(Cliente::new);
         c2.setNome("Cliente Dois");
         c2.setEndereco("Rua B, 20");
         c2.setLogin("22222222222");
@@ -115,6 +125,10 @@ public class DataSeed {
         c2.setCpf("22222222222");
         c2.setProfissao("Advogado");
         clienteRepository.save(c2);
+
+        if (automovelRepository.count() > 0 || pedidoRepository.count() > 0) {
+            return;
+        }
 
         Automovel a1 = new Automovel();
         a1.setMatricula("MAT-001");

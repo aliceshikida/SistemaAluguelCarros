@@ -2,7 +2,7 @@ package com.example.sistemagestaocarros.controllers;
 
 import com.example.sistemagestaocarros.dto.LoginRequest;
 import com.example.sistemagestaocarros.dto.LoginResponse;
-import com.example.sistemagestaocarros.dto.RegisterClienteRequest;
+import com.example.sistemagestaocarros.dto.RegisterRequest;
 import com.example.sistemagestaocarros.services.AuthService;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.HttpStatus;
@@ -23,8 +23,8 @@ public class AuthController {
     }
 
     @Post("/register")
-    public HttpResponse<Void> register(@Body RegisterClienteRequest req) {
-        authService.registerCliente(req);
+    public HttpResponse<Void> register(@Body RegisterRequest req) {
+        authService.register(req);
         return HttpResponse.status(HttpStatus.CREATED);
     }
 }

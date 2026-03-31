@@ -1,9 +1,11 @@
 package com.example.sistemagestaocarros.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.micronaut.serde.annotation.Serdeable;
 import jakarta.persistence.*;
 
 @Entity
+@Serdeable
 public class Automovel {
 
     @Id

@@ -4,10 +4,9 @@ import { useAuth } from '../context/AuthContext';
 
 export default function AutomovelPage() {
   const { auth } = useAuth();
-  const podeEditar = auth?.role === 'AGENTE' && auth?.tipoAgente === 'EMPRESA';
+  const podeEditar = auth?.role === 'CLIENTE';
 
   const [lista, setLista] = useState([]);
-  const [empresas, setEmpresas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
   const [modal, setModal] = useState(null);
@@ -27,10 +26,6 @@ export default function AutomovelPage() {
     try {
       const { data } = await api.get('/api/automoveis');
       setLista(data);
-      if (podeEditar) {
-        const { data: cl } = await api.get('/api/empresas');
-        setEmpresas(cl);
-      }
     } catch {
       setErr('Falha ao carregar automóveis.');
     } finally {
@@ -52,7 +47,6 @@ export default function AutomovelPage() {
         marca: form.marca,
         modelo: form.modelo,
         placa: form.placa,
-        empresaId: Number(form.empresaId),
       };
       if (modal?.automovel) {
         await api.put(`/api/automoveis/${modal.automovel.id}`, body);
@@ -62,7 +56,13 @@ export default function AutomovelPage() {
       setModal(null);
       await load();
     } catch (ex) {
-      setErr(ex.response?.data?.message || 'Erro ao salvar');
+      const d = ex.response?.data;
+      const msg =
+        d?._embedded?.errors?.[0]?.message ||
+        (typeof d?.message === 'string' ? d.message : null) ||
+        (typeof d === 'string' ? d : null) ||
+        'Erro ao salvar';
+      setErr(msg);
     } finally {
       setSaving(false);
     }
@@ -84,12 +84,17 @@ export default function AutomovelPage() {
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Automóveis</h1>
           <p className="mt-1 text-slate-600">Frota disponível para pedidos de aluguel.</p>
+          {!podeEditar && (
+            <p className="mt-1 text-sm text-amber-700">
+              Para cadastrar automóvel, entre com um usuário CLIENTE.
+            </p>
+          )}
         </div>
         {podeEditar && (
           <button
             type="button"
             onClick={() => {
-              setForm({ matricula: '', ano: '', marca: '', modelo: '', placa: '', empresaId: empresas[0]?.id ?? '' });
+              setForm({ matricula: '', ano: '', marca: '', modelo: '', placa: '', empresaId: '' });
               setModal({ novo: true });
             }}
             className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-indigo-700"
@@ -213,22 +218,9 @@ export default function AutomovelPage() {
                   onChange={(e) => setForm((f) => ({ ...f, modelo: e.target.value }))}
                 />
               </div>
-              <div className="sm:col-span-2">
-                <label className="text-xs font-medium text-slate-600">Empresa</label>
-                <select
-                  required
-                  className="mt-1 w-full rounded border border-slate-300 px-2 py-1.5"
-                  value={form.empresaId}
-                  onChange={(e) => setForm((f) => ({ ...f, empresaId: e.target.value }))}
-                >
-                  <option value="">Selecione…</option>
-                  {empresas.map((e) => (
-                    <option key={e.id} value={e.id}>
-                      {e.cnpj} (id {e.id})
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <p className="sm:col-span-2 text-xs text-slate-500">
+                Este automóvel ficará disponível para pedidos de aluguel.
+              </p>
             </div>
             <div className="mt-6 flex justify-end gap-2">
               <button type="button" className="rounded-lg border px-4 py-2" onClick={() => setModal(null)}>

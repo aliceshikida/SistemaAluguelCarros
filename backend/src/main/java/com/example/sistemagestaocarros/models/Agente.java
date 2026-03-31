@@ -22,6 +22,11 @@ public class Agente extends Usuario {
     @JoinColumn(name = "banco_id")
     private Banco banco;
 
+    /** Preenchido quando tipo = EMPRESA */
+    @ManyToOne
+    @JoinColumn(name = "empresa_id")
+    private Empresa empresa;
+
     public Agente() {}
 
     public String getTipo() { return tipo; }
@@ -41,4 +46,7 @@ public class Agente extends Usuario {
 
     public Banco getBanco() { return banco; }
     public void setBanco(Banco banco) { this.banco = banco; }
+
+    public Empresa getEmpresa() { return empresa; }
+    public void setEmpresa(Empresa empresa) { this.empresa = empresa; }
 }

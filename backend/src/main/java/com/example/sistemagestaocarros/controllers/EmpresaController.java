@@ -18,7 +18,7 @@ public class EmpresaController {
         this.empresaRepository = empresaRepository;
     }
 
-    @Get("/")
+    @Get
     @Transactional
     public List<Empresa> listar(HttpRequest<?> request) {
         if (request.getAttribute("userId", Integer.class).isEmpty()) {
