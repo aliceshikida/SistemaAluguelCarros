@@ -11,8 +11,8 @@ export default function StatusBadge({ status }) {
   const key = status || '';
   const cls = STYLES[key] || 'bg-slate-100 text-slate-800 border-slate-300';
   return (
-    <span className={`inline-flex rounded-md border px-2 py-0.5 text-xs font-semibold ${cls}`}>
-      {key || '—'}
-    </span>
+      <span className={`inline-flex rounded-md border px-2 py-0.5 text-xs font-semibold ${cls}`}>
+    {key || '—'}
+  </span>
   );
 }

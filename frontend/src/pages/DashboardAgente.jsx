@@ -40,35 +40,35 @@ export default function DashboardAgente() {
   }, [pedidos]);
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold text-slate-900">Dashboard</h1>
-      <p className="mt-1 text-slate-600">Pedidos e contratos do sistema.</p>
-      {loading ? (
-        <p className="mt-8 text-slate-500">Carregando…</p>
-      ) : (
-        <>
-          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {[
-              ['Pendentes', counts.PENDENTE, 'PENDENTE'],
-              ['Aprovados', counts.APROVADO, 'APROVADO'],
-              ['Rejeitados', counts.REJEITADO, 'REJEITADO'],
-              ['Cancelados', counts.CANCELADO, 'CANCELADO'],
-            ].map(([label, n, st]) => (
-              <div key={st} className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-slate-500">{label}</span>
-                  <StatusBadge status={st} />
-                </div>
-                <p className="mt-3 text-3xl font-bold text-slate-900">{n}</p>
+      <div>
+        <h1 className="text-2xl font-bold text-slate-900">Dashboard</h1>
+        <p className="mt-1 text-slate-600">Pedidos e contratos do sistema.</p>
+        {loading ? (
+            <p className="mt-8 text-slate-500">Carregando…</p>
+        ) : (
+            <>
+              <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                {[
+                  ['Pendentes', counts.PENDENTE, 'PENDENTE'],
+                  ['Aprovados', counts.APROVADO, 'APROVADO'],
+                  ['Rejeitados', counts.REJEITADO, 'REJEITADO'],
+                  ['Cancelados', counts.CANCELADO, 'CANCELADO'],
+                ].map(([label, n, st]) => (
+                    <div key={st} className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-slate-500">{label}</span>
+                        <StatusBadge status={st} />
+                      </div>
+                      <p className="mt-3 text-3xl font-bold text-slate-900">{n}</p>
+                    </div>
+                ))}
               </div>
-            ))}
-          </div>
-          <div className="mt-8 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-            <h2 className="text-lg font-semibold text-slate-900">Contratos registrados</h2>
-            <p className="mt-1 text-2xl font-bold text-indigo-600">{contratos.length}</p>
-          </div>
-        </>
-      )}
-    </div>
+              <div className="mt-8 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+                <h2 className="text-lg font-semibold text-slate-900">Contratos registrados</h2>
+                <p className="mt-1 text-2xl font-bold text-indigo-600">{contratos.length}</p>
+              </div>
+            </>
+        )}
+      </div>
   );
 }

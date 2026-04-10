@@ -1,9 +1,11 @@
 package com.example.sistemagestaocarros.security;
 
 import io.micronaut.core.order.Ordered;
+import io.micronaut.http.HttpMethod;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.HttpStatus;
+import io.micronaut.http.MutableHttpResponse;
 import io.micronaut.http.annotation.Filter;
 import io.micronaut.http.filter.HttpServerFilter;
 import io.micronaut.http.filter.ServerFilterChain;
@@ -21,7 +23,12 @@ public class JwtAuthenticationFilter implements HttpServerFilter, Ordered {
     }
 
     @Override
-    public Publisher<io.micronaut.http.MutableHttpResponse<?>> doFilter(HttpRequest<?> request, ServerFilterChain chain) {
+    public Publisher<MutableHttpResponse<?>> doFilter(HttpRequest<?> request, ServerFilterChain chain) {
+        // Deixa preflight CORS passar direto
+        if (request.getMethod() == HttpMethod.OPTIONS) {
+            return chain.proceed(request);
+        }
+
         String path = request.getPath();
         if (!path.startsWith("/api/")) {
             return chain.proceed(request);

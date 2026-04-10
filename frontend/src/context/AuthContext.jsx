@@ -44,15 +44,15 @@ export function AuthProvider({ children }) {
   const logout = useCallback(() => setAuth(null), []);
 
   const value = useMemo(
-    () => ({
-      auth,
-      isAuthenticated: !!auth?.token,
-      login,
-      logout,
-      register,
-      registerCliente: register,
-    }),
-    [auth, login, logout, register]
+      () => ({
+        auth,
+        isAuthenticated: !!auth?.token,
+        login,
+        logout,
+        register,
+        registerCliente: register,
+      }),
+      [auth, login, logout, register]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
