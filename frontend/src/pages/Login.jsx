@@ -1,6 +1,9 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import ValidationNotice from '../components/ValidationNotice';
+import { isValidLoginId, LOGIN_INVALIDO_MSG } from '../utils/login';
+import { isOfflineError, OFFLINE_MSG } from '../utils/httpErrors';
 
 export default function Login() {
   const { login } = useAuth();
@@ -13,6 +16,11 @@ export default function Login() {
   const [err, setErr] = useState('');
   const [loading, setLoading] = useState(false);
 
+  const loginFieldError = useMemo(
+      () => (loginField.trim() && !isValidLoginId(loginField) ? LOGIN_INVALIDO_MSG : null),
+      [loginField]
+  );
+
   async function onSubmit(e) {
     e.preventDefault();
     setErr('');
@@ -20,11 +28,16 @@ export default function Login() {
       setErr('Preencha login e senha.');
       return;
     }
+    if (!isValidLoginId(loginField)) return;
     setLoading(true);
     try {
       await login(loginField.trim(), senha);
       navigate(from, { replace: true });
     } catch (ex) {
+      if (isOfflineError(ex)) {
+        setErr(OFFLINE_MSG);
+        return;
+      }
       const d = ex.response?.data;
       const msg =
           d?._embedded?.errors?.[0]?.message ||
@@ -46,13 +59,18 @@ export default function Login() {
           <p className="mt-1 text-center text-sm text-slate-500">Sistema de aluguel de automóveis</p>
           <form onSubmit={onSubmit} className="mt-8 space-y-4">
             <div>
-              <label className="block text-sm font-medium text-slate-700">Login (CPF)</label>
+              <label className="block text-sm font-medium text-slate-700">Login</label>
               <input
-                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  className={`mt-1 w-full rounded-lg border px-3 py-2 text-slate-900 shadow-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 ${
+                    loginFieldError
+                      ? 'border-red-400 focus:border-red-500'
+                      : 'border-slate-300 focus:border-indigo-500'
+                  }`}
                   value={loginField}
                   onChange={(e) => setLoginField(e.target.value)}
                   autoComplete="username"
               />
+              <ValidationNotice message={loginFieldError} />
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700">Senha</label>

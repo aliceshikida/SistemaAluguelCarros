@@ -74,35 +74,35 @@ public class DataSeed {
             bancoRepository.save(ban);
         }
 
-        Agente agEmp = agenteRepository.findByLogin("33333333333").orElseGet(Agente::new);
+        Agente agEmp = agenteRepository.findByLogin("locadora").orElseGet(Agente::new);
         agEmp.setTipo(AgenteTipos.EMPRESA);
         agEmp.setNome("Locadora Exemplo S.A.");
         agEmp.setNomeFantasia("Locadora Exemplo");
         agEmp.setEndereco("Av. Central, 100");
-        agEmp.setLogin("33333333333");
-        agEmp.setSenha(passwordHasher.hash("33333333333"));
+        agEmp.setLogin("locadora");
+        agEmp.setSenha(passwordHasher.hash("locadora"));
         agEmp.setIdAgente(1);
         agEmp.setEmpresa(emp);
         agenteRepository.save(agEmp);
 
-        Agente agBan = agenteRepository.findByLogin("44444444444").orElseGet(Agente::new);
+        Agente agBan = agenteRepository.findByLogin("bancoexemplo").orElseGet(Agente::new);
         agBan.setTipo(AgenteTipos.BANCO);
         agBan.setNome("Banco Exemplo");
         agBan.setNomeFantasia("Banco Exemplo");
         agBan.setEndereco("Rua do Ouro, 50");
-        agBan.setLogin("44444444444");
-        agBan.setSenha(passwordHasher.hash("44444444444"));
+        agBan.setLogin("bancoexemplo");
+        agBan.setSenha(passwordHasher.hash("bancoexemplo"));
         agBan.setBanco(ban);
         agBan.setIdAgente(2);
         agenteRepository.save(agBan);
 
-        Cliente c1 = clienteRepository.findByLogin("11111111111").orElseGet(Cliente::new);
+        Cliente c1 = clienteRepository.findByLogin("cliente1").orElseGet(Cliente::new);
         c1.setNome("Cliente Um");
         c1.setEndereco("Rua A, 10");
-        c1.setLogin("11111111111");
-        c1.setSenha(passwordHasher.hash("11111111111"));
+        c1.setLogin("cliente1");
+        c1.setSenha(passwordHasher.hash("cliente1"));
         c1.setRg("MG-12.345.678");
-        c1.setCpf("11111111111");
+        c1.setCpf("11144477735");
         c1.setProfissao("Engenheiro");
         clienteRepository.save(c1);
 
@@ -116,13 +116,13 @@ public class DataSeed {
         r1.setDescricao("Salário");
         rendimentoRepository.save(r1);
 
-        Cliente c2 = clienteRepository.findByLogin("22222222222").orElseGet(Cliente::new);
+        Cliente c2 = clienteRepository.findByLogin("cliente2").orElseGet(Cliente::new);
         c2.setNome("Cliente Dois");
         c2.setEndereco("Rua B, 20");
-        c2.setLogin("22222222222");
-        c2.setSenha(passwordHasher.hash("22222222222"));
+        c2.setLogin("cliente2");
+        c2.setSenha(passwordHasher.hash("cliente2"));
         c2.setRg("SP-98.765.432");
-        c2.setCpf("22222222222");
+        c2.setCpf("52998224725");
         c2.setProfissao("Advogado");
         clienteRepository.save(c2);
 

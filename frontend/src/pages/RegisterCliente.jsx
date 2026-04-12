@@ -1,6 +1,11 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import ValidationNotice from '../components/ValidationNotice';
+import { isValidCpf } from '../utils/cpf';
+import { isValidRg, RG_INVALIDO_MSG } from '../utils/rg';
+import { isValidLoginId, LOGIN_INVALIDO_MSG } from '../utils/login';
+import { isOfflineError, OFFLINE_MSG } from '../utils/httpErrors';
 
 const emptyRend = () => ({ empregadorNome: '', valor: '', descricao: '' });
 
@@ -24,6 +29,23 @@ export default function RegisterCliente() {
   const [rendimentos, setRendimentos] = useState([emptyRend()]);
   const [err, setErr] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const loginFieldError = useMemo(
+      () => (form.login.trim() && !isValidLoginId(form.login) ? LOGIN_INVALIDO_MSG : null),
+      [form.login]
+  );
+  const cpfFieldError = useMemo(
+      () =>
+        form.tipoUsuario === 'CLIENTE' && form.cpf.trim() && !isValidCpf(form.cpf)
+          ? 'CPF inválido. Confira os 11 dígitos e os dígitos verificadores.'
+          : null,
+      [form.tipoUsuario, form.cpf]
+  );
+  const rgFieldError = useMemo(
+      () =>
+        form.tipoUsuario === 'CLIENTE' && form.rg.trim() && !isValidRg(form.rg) ? RG_INVALIDO_MSG : null,
+      [form.tipoUsuario, form.rg]
+  );
 
   function updateRend(i, field, value) {
     setRendimentos((prev) => {
@@ -64,6 +86,9 @@ export default function RegisterCliente() {
       setErr('Máximo de 3 rendimentos.');
       return;
     }
+    if (!isValidLoginId(form.login)) return;
+    if (form.tipoUsuario === 'CLIENTE' && form.cpf.trim() && !isValidCpf(form.cpf)) return;
+    if (form.tipoUsuario === 'CLIENTE' && form.rg.trim() && !isValidRg(form.rg)) return;
     setLoading(true);
     try {
       await register({
@@ -84,6 +109,10 @@ export default function RegisterCliente() {
       });
       navigate('/login');
     } catch (ex) {
+      if (isOfflineError(ex)) {
+        setErr(OFFLINE_MSG);
+        return;
+      }
       const d = ex.response?.data;
       const msg =
           d?._embedded?.errors?.[0]?.message ||
@@ -149,14 +178,17 @@ export default function RegisterCliente() {
               </div>
               <div>
                 <label className="text-sm font-medium text-slate-700">
-                  {form.tipoUsuario === 'CLIENTE' ? 'Login (CPF) *' : 'Login *'}
+                  Login *
                 </label>
                 <input
                     required
-                    className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
+                    className={`mt-1 w-full rounded-lg border px-3 py-2 ${
+                      loginFieldError ? 'border-red-400' : 'border-slate-300'
+                    }`}
                     value={form.login}
                     onChange={(e) => setForm((f) => ({ ...f, login: e.target.value }))}
                 />
+                <ValidationNotice message={loginFieldError} />
               </div>
               <div>
                 <label className="text-sm font-medium text-slate-700">Senha *</label>
@@ -174,18 +206,24 @@ export default function RegisterCliente() {
                     <div>
                       <label className="text-sm font-medium text-slate-700">RG</label>
                       <input
-                          className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
+                          className={`mt-1 w-full rounded-lg border px-3 py-2 ${
+                            rgFieldError ? 'border-red-400' : 'border-slate-300'
+                          }`}
                           value={form.rg}
                           onChange={(e) => setForm((f) => ({ ...f, rg: e.target.value }))}
                       />
+                      <ValidationNotice message={rgFieldError} />
                     </div>
                     <div>
                       <label className="text-sm font-medium text-slate-700">CPF</label>
                       <input
-                          className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
+                          className={`mt-1 w-full rounded-lg border px-3 py-2 ${
+                            cpfFieldError ? 'border-red-400' : 'border-slate-300'
+                          }`}
                           value={form.cpf}
                           onChange={(e) => setForm((f) => ({ ...f, cpf: e.target.value }))}
                       />
+                      <ValidationNotice message={cpfFieldError} />
                     </div>
                     <div className="sm:col-span-2">
                       <label className="text-sm font-medium text-slate-700">Profissão</label>

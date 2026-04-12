@@ -61,7 +61,7 @@ SistemaAluguelCarros/
 - um contrato de crédito é opcional
 - o automóvel pode pertencer a cliente, empresa ou banco
 - usuários criados no cadastro escolhem sua própria senha
-- usuários de exemplo (seed) usam senha igual ao CPF apenas para facilitar testes
+- usuários de exemplo (seed) usam senha igual ao login apenas para facilitar testes
 
 ## Descrição dos atores
 - Cliente: solicita e acompanha aluguel.
@@ -91,10 +91,10 @@ Criados automaticamente na primeira execução:
 - pedidos com status diferentes
 
 Credenciais iniciais de exemplo (seed):
-- Cliente 1: CPF `11111111111` | Senha `11111111111`
-- Cliente 2: CPF `22222222222` | Senha `22222222222`
-- Empresa: CPF `33333333333` | Senha `33333333333`
-- Banco: CPF `44444444444` | Senha `44444444444`
+- Cliente 1: login `cliente1` | senha `cliente1`
+- Cliente 2: login `cliente2` | senha `cliente2`
+- Empresa: login `locadora` | senha `locadora`
+- Banco: login `bancoexemplo` | senha `bancoexemplo`
 
 ## Instruções para rodar localmente
 

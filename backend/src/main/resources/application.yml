@@ -1,4 +1,4 @@
-﻿micronaut:
+micronaut:
   application:
     name: sistemaAluguelCarros
   server:
@@ -9,6 +9,7 @@
         web:
           allowed-origins:
             - http://localhost:5173
+            - http://127.0.0.1:5173
           allowed-methods:
             - GET
             - POST
@@ -35,10 +36,9 @@ jpa:
       packages:
         - com.example.sistemagestaocarros.models
     properties:
-      hibernate:
-        hbm2ddl:
-          auto: update
-        show_sql: true
+      # Chaves planas: o formato aninhado nem sempre vira hibernate.hbm2ddl.auto e o schema não é criado (500 no login/cadastro).
+      hibernate.hbm2ddl.auto: update
+      hibernate.show_sql: true
 app:
   jwt:
     secret: chave-super-secreta-minimo-32-caracteres-para-hs256!!
