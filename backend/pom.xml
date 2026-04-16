@@ -21,7 +21,7 @@
     <micronaut.aot.enabled>false</micronaut.aot.enabled>
     <micronaut.aot.packageName>com.example.aot.generated</micronaut.aot.packageName>
     <micronaut.runtime>netty</micronaut.runtime>
-    <exec.mainClass>com.example.sistemagestaocarros.Application</exec.mainClass>
+    <exec.mainClass>com.example.Application</exec.mainClass>
   </properties>
 
   <repositories>
@@ -30,6 +30,7 @@
       <url>https://repo.maven.apache.org/maven2</url>
     </repository>
   </repositories>
+
 
   <dependencies>
 
@@ -48,12 +49,6 @@
     <dependency>
       <groupId>io.micronaut.serde</groupId>
       <artifactId>micronaut-serde-jackson</artifactId>
-      <scope>compile</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-annotations</artifactId>
       <scope>compile</scope>
     </dependency>
 
@@ -111,45 +106,14 @@
       <scope>test</scope>
     </dependency>
 
-    <dependency>
-      <groupId>org.yaml</groupId>
-      <artifactId>snakeyaml</artifactId>
-      <scope>runtime</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>io.jsonwebtoken</groupId>
-      <artifactId>jjwt-api</artifactId>
-      <version>0.12.6</version>
-    </dependency>
-    <dependency>
-      <groupId>io.jsonwebtoken</groupId>
-      <artifactId>jjwt-impl</artifactId>
-      <version>0.12.6</version>
-      <scope>runtime</scope>
-    </dependency>
-    <dependency>
-      <groupId>io.jsonwebtoken</groupId>
-      <artifactId>jjwt-jackson</artifactId>
-      <version>0.12.6</version>
-      <scope>runtime</scope>
-    </dependency>
-    <dependency>
-      <groupId>at.favre.lib</groupId>
-      <artifactId>bcrypt</artifactId>
-      <version>0.10.2</version>
-    </dependency>
-
   </dependencies>
   <build>
     <plugins>
-
-    
       <plugin>
         <groupId>io.micronaut.maven</groupId>
         <artifactId>micronaut-maven-plugin</artifactId>
         <configuration>
-          <configFile>aot-${jar}.properties</configFile>
+          <configFile>aot-${packaging}.properties</configFile>
         </configuration>
       </plugin>
 

@@ -1,4 +1,4 @@
-package com.example.sistemagestaocarros;
+package com.example;
 
 import io.micronaut.runtime.Micronaut;
 
