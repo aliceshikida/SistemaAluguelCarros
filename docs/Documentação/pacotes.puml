@@ -1,0 +1,55 @@
+@startuml diagrama-pacotes
+title Diagrama de Pacotes — Visão lógica (MVC + persistência + bootstrap)
+
+package "com.example" {
+  class Application <<entrypoint>>
+
+  package "aluguel.controller" <<Folder>> {
+  }
+
+  package "aluguel.service" <<Folder>> {
+  }
+
+  package "aluguel.repository" <<Folder>> {
+  }
+
+  package "aluguel.model" <<Folder>> {
+  }
+
+  package "aluguel.dto" <<Folder>> {
+  }
+
+  package "aluguel.security" <<Folder>> {
+  }
+
+  package "aluguel.bootstrap" <<Folder>> {
+  }
+}
+
+aluguel.controller ..> aluguel.service : depende
+aluguel.controller ..> aluguel.security : @Secured / papéis
+aluguel.service ..> aluguel.repository : depende
+aluguel.service ..> aluguel.model : usa
+aluguel.service ..> aluguel.dto : usa
+aluguel.repository ..> aluguel.model : persiste
+aluguel.security ..> aluguel.repository : login (usuário)
+aluguel.bootstrap ..> aluguel.repository : seed (dev)
+aluguel.bootstrap ..> aluguel.security : hash de senha
+
+note bottom of aluguel.controller
+  Camada **Controller** (HTTP, JSON).
+end note
+
+note bottom of aluguel.service
+  Camada **Service** (regras de negócio).
+end note
+
+note bottom of aluguel.repository
+  **Repository** (persistência JPA).
+end note
+
+note bottom of aluguel.bootstrap
+  Carga opcional de dados demo (**app.dev.seed.enabled**).
+end note
+
+@enduml

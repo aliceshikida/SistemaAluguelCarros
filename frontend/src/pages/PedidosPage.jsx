@@ -6,13 +6,17 @@ import StatusBadge from '../components/StatusBadge';
 function fmtDate(v) {
   if (!v) return '—';
   const d = new Date(v);
-  return Number.isNaN(d.getTime()) ? '—' : d.toLocaleDateString('pt-BR');
+  return Number.isNaN(d.getTime()) ? String(v) : d.toLocaleDateString('pt-BR');
+}
+
+function asList(data) {
+  return Array.isArray(data) ? data : [];
 }
 
 export default function PedidosPage() {
   const { auth } = useAuth();
   const isCliente = auth?.role === 'CLIENTE';
-  const isAgente = auth?.role === 'AGENTE';
+  const isAgente = auth?.role === 'EMPRESA' || auth?.role === 'BANCO';
 
   const [pedidos, setPedidos] = useState([]);
   const [autos, setAutos] = useState([]);
@@ -20,25 +24,40 @@ export default function PedidosPage() {
   const [err, setErr] = useState('');
 
   const [modal, setModal] = useState(null);
-  const [form, setForm] = useState({ automovelId: '', observacao: '', analiseFinanceira: '' });
-  const [decForm, setDecForm] = useState({ status: 'APROVADO', analiseFinanceira: '' });
+  const [form, setForm] = useState({
+    automovelId: '',
+    dataInicio: '',
+    dataFim: '',
+    valorEstimado: '',
+    observacaoCliente: '',
+  });
+  const [decForm, setDecForm] = useState({ aprovado: true, parecerFinanceiro: '' });
   const [saving, setSaving] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
     setErr('');
-    try {
-      const [{ data: plist }, { data: alist }] = await Promise.all([
-        api.get('/api/pedidos'),
-        api.get('/api/automoveis'),
-      ]);
-      setPedidos(plist);
-      setAutos(alist);
-    } catch {
-      setErr('Falha ao carregar dados.');
-    } finally {
-      setLoading(false);
+    const [pedRes, autoRes] = await Promise.allSettled([
+      api.get('/api/pedidos'),
+      api.get('/api/automoveis'),
+    ]);
+    const falhas = [];
+    if (pedRes.status === 'fulfilled') {
+      setPedidos(asList(pedRes.value.data));
+    } else {
+      setPedidos([]);
+      falhas.push('pedidos');
     }
+    if (autoRes.status === 'fulfilled') {
+      setAutos(asList(autoRes.value.data));
+    } else {
+      setAutos([]);
+      falhas.push('automóveis');
+    }
+    if (falhas.length > 0) {
+      setErr(`Não foi possível carregar: ${falhas.join(' e ')}.`);
+    }
+    setLoading(false);
   }, []);
 
   useEffect(() => {
@@ -49,12 +68,24 @@ export default function PedidosPage() {
     e.preventDefault();
     setSaving(true);
     try {
-      await api.post('/api/pedidos', {
-        automovelId: form.automovelId ? Number(form.automovelId) : null,
-        observacao: form.observacao || null,
-      });
+      const body = {
+        automovelId: Number(form.automovelId),
+        dataInicio: form.dataInicio,
+        dataFim: form.dataFim,
+        observacaoCliente: form.observacaoCliente?.trim() || null,
+      };
+      if (form.valorEstimado !== '' && !Number.isNaN(Number(form.valorEstimado))) {
+        body.valorEstimado = Number(form.valorEstimado);
+      }
+      await api.post('/api/pedidos', body);
       setModal(null);
-      setForm({ automovelId: '', observacao: '', analiseFinanceira: '' });
+      setForm({
+        automovelId: '',
+        dataInicio: '',
+        dataFim: '',
+        valorEstimado: '',
+        observacaoCliente: '',
+      });
       await load();
     } catch (ex) {
       setErr(ex.response?.data?.message || 'Erro ao criar pedido');
@@ -69,11 +100,15 @@ export default function PedidosPage() {
     setSaving(true);
     try {
       const body = {
-        automovelId: form.automovelId ? Number(form.automovelId) : null,
-        observacao: form.observacao || null,
+        automovelId: Number(form.automovelId),
+        dataInicio: form.dataInicio,
+        dataFim: form.dataFim,
+        observacaoCliente: form.observacaoCliente?.trim() || null,
       };
-      if (isAgente) body.analiseFinanceira = form.analiseFinanceira || null;
-      await api.put(`/api/pedidos/${modal.pedido.idPedido}`, body);
+      if (form.valorEstimado !== '' && !Number.isNaN(Number(form.valorEstimado))) {
+        body.valorEstimado = Number(form.valorEstimado);
+      }
+      await api.put(`/api/pedidos/${modal.pedido.id}`, body);
       setModal(null);
       await load();
     } catch (ex) {
@@ -86,19 +121,31 @@ export default function PedidosPage() {
   async function cancelar(p) {
     if (!window.confirm('Cancelar este pedido?')) return;
     try {
-      await api.delete(`/api/pedidos/${p.idPedido}`);
+      await api.post(`/api/pedidos/${p.id}/cancelar`);
       await load();
     } catch (ex) {
       setErr(ex.response?.data?.message || 'Não foi possível cancelar');
     }
   }
 
+  async function iniciarAnalise(p) {
+    setSaving(true);
+    try {
+      await api.post(`/api/pedidos/${p.id}/iniciar-analise`);
+      await load();
+    } catch (ex) {
+      setErr(ex.response?.data?.message || 'Erro ao iniciar análise');
+    } finally {
+      setSaving(false);
+    }
+  }
+
   async function decisao(p) {
     setSaving(true);
     try {
-      await api.post(`/api/pedidos/${p.idPedido}/decisao`, {
-        status: decForm.status,
-        analiseFinanceira: decForm.analiseFinanceira || null,
+      await api.post(`/api/pedidos/${p.id}/decisao`, {
+        aprovado: decForm.aprovado,
+        parecerFinanceiro: decForm.parecerFinanceiro.trim(),
       });
       setModal(null);
       await load();
@@ -107,6 +154,13 @@ export default function PedidosPage() {
     } finally {
       setSaving(false);
     }
+  }
+
+  function veiculoLabel(p) {
+    if (p.automovelMarca || p.automovelModelo) {
+      return `${p.automovelMarca || ''} ${p.automovelModelo || ''} (${p.automovelPlaca || '—'})`.trim();
+    }
+    return '—';
   }
 
   return (
@@ -122,7 +176,13 @@ export default function PedidosPage() {
               <button
                   type="button"
                   onClick={() => {
-                    setForm({ automovelId: '', observacao: '' });
+                    setForm({
+                      automovelId: '',
+                      dataInicio: '',
+                      dataFim: '',
+                      valorEstimado: '',
+                      observacaoCliente: '',
+                    });
                     setModal({ type: 'create' });
                   }}
                   className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-indigo-700"
@@ -141,53 +201,56 @@ export default function PedidosPage() {
                 <thead className="bg-slate-50">
                 <tr>
                   <th className="px-4 py-3 text-left font-semibold text-slate-700">ID</th>
-                  <th className="px-4 py-3 text-left font-semibold text-slate-700">Data</th>
+                  <th className="px-4 py-3 text-left font-semibold text-slate-700">Período</th>
                   <th className="px-4 py-3 text-left font-semibold text-slate-700">Status</th>
                   <th className="px-4 py-3 text-left font-semibold text-slate-700">Veículo</th>
                   <th className="px-4 py-3 text-left font-semibold text-slate-700">Observação</th>
                   {!isCliente && (
-                      <th className="px-4 py-3 text-left font-semibold text-slate-700">Análise</th>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-700">Parecer</th>
                   )}
                   <th className="px-4 py-3 text-right font-semibold text-slate-700">Ações</th>
                 </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                 {pedidos.map((p) => (
-                    <tr key={p.idPedido} className="hover:bg-slate-50">
-                      <td className="px-4 py-3 font-mono text-slate-800">{p.idPedido}</td>
-                      <td className="px-4 py-3 text-slate-600">{fmtDate(p.dataSolicitacao)}</td>
+                    <tr key={p.id} className="hover:bg-slate-50">
+                      <td className="px-4 py-3 font-mono text-slate-800">{p.id}</td>
+                      <td className="px-4 py-3 text-slate-600">
+                        {fmtDate(p.dataInicio)} — {fmtDate(p.dataFim)}
+                      </td>
                       <td className="px-4 py-3">
                         <StatusBadge status={p.status} />
                       </td>
-                      <td className="px-4 py-3 text-slate-700">
-                        {p.automovel
-                            ? `${p.automovel.marca} ${p.automovel.modelo} (${p.automovel.placa || '—'})`
-                            : '—'}
-                      </td>
-                      <td className="max-w-xs truncate px-4 py-3 text-slate-600">{p.observacao || '—'}</td>
+                      <td className="px-4 py-3 text-slate-700">{veiculoLabel(p)}</td>
+                      <td className="max-w-xs truncate px-4 py-3 text-slate-600">{p.observacaoCliente || '—'}</td>
                       {!isCliente && (
                           <td className="max-w-xs truncate px-4 py-3 text-slate-600">
-                            {p.analiseFinanceira || '—'}
+                            {p.parecerFinanceiro || '—'}
                           </td>
                       )}
                       <td className="px-4 py-3 text-right">
                         <div className="flex flex-wrap justify-end gap-2">
-                          {isCliente && p.status === 'PENDENTE' && (
-                              <>
-                                <button
-                                    type="button"
-                                    className="text-indigo-600 hover:underline"
-                                    onClick={() => {
-                                      setForm({
-                                        automovelId: p.automovel?.id ?? '',
-                                        observacao: p.observacao || '',
-                                        analiseFinanceira: p.analiseFinanceira || '',
-                                      });
-                                      setModal({ type: 'edit', pedido: p });
-                                    }}
-                                >
-                                  Editar
-                                </button>
+                          {isCliente && p.status === 'SOLICITADO' && (
+                              <button
+                                  type="button"
+                                  className="text-indigo-600 hover:underline"
+                                  onClick={() => {
+                                    setForm({
+                                      automovelId: String(p.automovelId ?? ''),
+                                      dataInicio: p.dataInicio ?? '',
+                                      dataFim: p.dataFim ?? '',
+                                      valorEstimado:
+                                          p.valorEstimado != null ? String(p.valorEstimado) : '',
+                                      observacaoCliente: p.observacaoCliente || '',
+                                    });
+                                    setModal({ type: 'edit', pedido: p });
+                                  }}
+                              >
+                                Editar
+                              </button>
+                          )}
+                          {isCliente &&
+                              (p.status === 'SOLICITADO' || p.status === 'EM_ANALISE_FINANCEIRA') && (
                                 <button
                                     type="button"
                                     className="text-red-600 hover:underline"
@@ -195,31 +258,23 @@ export default function PedidosPage() {
                                 >
                                   Cancelar
                                 </button>
-                              </>
-                          )}
-                          {isAgente && p.status === 'PENDENTE' && (
+                              )}
+                          {isAgente && p.status === 'SOLICITADO' && (
                               <>
                                 <button
                                     type="button"
-                                    className="text-indigo-600 hover:underline"
-                                    onClick={() => {
-                                      setForm({
-                                        automovelId: p.automovel?.id ?? '',
-                                        observacao: p.observacao || '',
-                                        analiseFinanceira: p.analiseFinanceira || '',
-                                      });
-                                      setModal({ type: 'edit', pedido: p });
-                                    }}
+                                    className="text-slate-700 hover:underline"
+                                    onClick={() => iniciarAnalise(p)}
                                 >
-                                  Editar
+                                  Iniciar análise
                                 </button>
                                 <button
                                     type="button"
                                     className="font-medium text-emerald-700 hover:underline"
                                     onClick={() => {
                                       setDecForm({
-                                        status: 'APROVADO',
-                                        analiseFinanceira: p.analiseFinanceira || '',
+                                        aprovado: true,
+                                        parecerFinanceiro: p.parecerFinanceiro || '',
                                       });
                                       setModal({ type: 'decisao', pedido: p });
                                     }}
@@ -227,6 +282,21 @@ export default function PedidosPage() {
                                   Decidir
                                 </button>
                               </>
+                          )}
+                          {isAgente && p.status === 'EM_ANALISE_FINANCEIRA' && (
+                              <button
+                                  type="button"
+                                  className="font-medium text-emerald-700 hover:underline"
+                                  onClick={() => {
+                                    setDecForm({
+                                      aprovado: true,
+                                      parecerFinanceiro: p.parecerFinanceiro || '',
+                                    });
+                                    setModal({ type: 'decisao', pedido: p });
+                                  }}
+                              >
+                                Decidir
+                              </button>
                           )}
                         </div>
                       </td>
@@ -245,26 +315,64 @@ export default function PedidosPage() {
                   <div>
                     <label className="text-sm font-medium text-slate-700">Automóvel</label>
                     <select
-                        required
+                        required={autos.length > 0}
                         className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
                         value={form.automovelId}
                         onChange={(e) => setForm((f) => ({ ...f, automovelId: e.target.value }))}
                     >
-                      <option value="">Selecione…</option>
+                      <option value="">{autos.length === 0 ? 'Nenhum veículo cadastrado' : 'Selecione…'}</option>
                       {autos.map((a) => (
-                          <option key={a.id} value={a.id}>
+                          <option key={a.id} value={String(a.id)}>
                             {a.marca} {a.modelo} — {a.placa}
                           </option>
                       ))}
                     </select>
+                    {autos.length === 0 && (
+                        <p className="mt-1 text-xs text-amber-700">
+                          Cadastre ao menos um automóvel em <strong>Automóveis</strong> antes de abrir um pedido.
+                        </p>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-sm font-medium text-slate-700">Início</label>
+                      <input
+                          type="date"
+                          required
+                          className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
+                          value={form.dataInicio}
+                          onChange={(e) => setForm((f) => ({ ...f, dataInicio: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-slate-700">Fim</label>
+                      <input
+                          type="date"
+                          required
+                          className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
+                          value={form.dataFim}
+                          onChange={(e) => setForm((f) => ({ ...f, dataFim: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-slate-700">Valor estimado (opcional)</label>
+                    <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
+                        value={form.valorEstimado}
+                        onChange={(e) => setForm((f) => ({ ...f, valorEstimado: e.target.value }))}
+                    />
                   </div>
                   <div>
                     <label className="text-sm font-medium text-slate-700">Observação</label>
                     <textarea
                         className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
                         rows={3}
-                        value={form.observacao}
-                        onChange={(e) => setForm((f) => ({ ...f, observacao: e.target.value }))}
+                        value={form.observacaoCliente}
+                        onChange={(e) => setForm((f) => ({ ...f, observacaoCliente: e.target.value }))}
                     />
                   </div>
                   <div className="flex justify-end gap-2">
@@ -277,7 +385,7 @@ export default function PedidosPage() {
                     </button>
                     <button
                         type="submit"
-                        disabled={saving}
+                        disabled={saving || autos.length === 0}
                         className="rounded-lg bg-indigo-600 px-4 py-2 text-white disabled:opacity-60"
                     >
                       Criar
@@ -291,43 +399,65 @@ export default function PedidosPage() {
         {modal?.type === 'edit' && modal.pedido && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
               <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
-                <h2 className="text-lg font-semibold">Editar pedido #{modal.pedido.idPedido}</h2>
+                <h2 className="text-lg font-semibold">Editar pedido #{modal.pedido.id}</h2>
                 <form onSubmit={salvarEdicao} className="mt-4 space-y-4">
                   <div>
                     <label className="text-sm font-medium text-slate-700">Automóvel</label>
                     <select
+                        required
                         className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
                         value={form.automovelId}
                         onChange={(e) => setForm((f) => ({ ...f, automovelId: e.target.value }))}
                     >
-                      <option value="">—</option>
                       {autos.map((a) => (
-                          <option key={a.id} value={a.id}>
+                          <option key={a.id} value={String(a.id)}>
                             {a.marca} {a.modelo}
                           </option>
                       ))}
                     </select>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-sm font-medium text-slate-700">Início</label>
+                      <input
+                          type="date"
+                          required
+                          className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
+                          value={form.dataInicio}
+                          onChange={(e) => setForm((f) => ({ ...f, dataInicio: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-slate-700">Fim</label>
+                      <input
+                          type="date"
+                          required
+                          className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
+                          value={form.dataFim}
+                          onChange={(e) => setForm((f) => ({ ...f, dataFim: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-slate-700">Valor estimado (opcional)</label>
+                    <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
+                        value={form.valorEstimado}
+                        onChange={(e) => setForm((f) => ({ ...f, valorEstimado: e.target.value }))}
+                    />
                   </div>
                   <div>
                     <label className="text-sm font-medium text-slate-700">Observação</label>
                     <textarea
                         className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
                         rows={3}
-                        value={form.observacao}
-                        onChange={(e) => setForm((f) => ({ ...f, observacao: e.target.value }))}
+                        value={form.observacaoCliente}
+                        onChange={(e) => setForm((f) => ({ ...f, observacaoCliente: e.target.value }))}
                     />
                   </div>
-                  {isAgente && (
-                      <div>
-                        <label className="text-sm font-medium text-slate-700">Análise financeira</label>
-                        <textarea
-                            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
-                            rows={3}
-                            value={form.analiseFinanceira}
-                            onChange={(e) => setForm((f) => ({ ...f, analiseFinanceira: e.target.value }))}
-                        />
-                      </div>
-                  )}
                   <div className="flex justify-end gap-2">
                     <button
                         type="button"
@@ -352,26 +482,29 @@ export default function PedidosPage() {
         {modal?.type === 'decisao' && modal.pedido && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
               <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
-                <h2 className="text-lg font-semibold">Decisão — pedido #{modal.pedido.idPedido}</h2>
+                <h2 className="text-lg font-semibold">Decisão — pedido #{modal.pedido.id}</h2>
                 <div className="mt-4 space-y-4">
                   <div>
                     <label className="text-sm font-medium text-slate-700">Resultado</label>
                     <select
                         className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
-                        value={decForm.status}
-                        onChange={(e) => setDecForm((f) => ({ ...f, status: e.target.value }))}
+                        value={decForm.aprovado ? 'sim' : 'nao'}
+                        onChange={(e) =>
+                          setDecForm((f) => ({ ...f, aprovado: e.target.value === 'sim' }))
+                        }
                     >
-                      <option value="APROVADO">Aprovar</option>
-                      <option value="REJEITADO">Rejeitar</option>
+                      <option value="sim">Aprovar (financeiro)</option>
+                      <option value="nao">Reprovar</option>
                     </select>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-slate-700">Análise financeira</label>
+                    <label className="text-sm font-medium text-slate-700">Parecer financeiro *</label>
                     <textarea
+                        required
                         className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
                         rows={3}
-                        value={decForm.analiseFinanceira}
-                        onChange={(e) => setDecForm((f) => ({ ...f, analiseFinanceira: e.target.value }))}
+                        value={decForm.parecerFinanceiro}
+                        onChange={(e) => setDecForm((f) => ({ ...f, parecerFinanceiro: e.target.value }))}
                     />
                   </div>
                   <div className="flex justify-end gap-2">
@@ -384,7 +517,7 @@ export default function PedidosPage() {
                     </button>
                     <button
                         type="button"
-                        disabled={saving}
+                        disabled={saving || !decForm.parecerFinanceiro.trim()}
                         onClick={() => decisao(modal.pedido)}
                         className="rounded-lg bg-indigo-600 px-4 py-2 text-white disabled:opacity-60"
                     >

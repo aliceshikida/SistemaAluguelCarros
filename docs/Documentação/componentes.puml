@@ -1,0 +1,41 @@
+@startuml diagrama-componentes
+title Diagrama de Componentes — Sistema (frontend + API)
+
+package "Cliente (navegador)" as C {
+  [SPA React + Vite + Tailwind\n(rotas, telas, Axios)] as Web
+}
+
+package "Servidor de aplicação (API REST)" as S {
+  [Micronaut HTTP Server\n(Netty)] as Http
+  [Segurança JWT\n(Micronaut Security)] as Sec
+  [Controllers REST\n(com.example.aluguel.controller)] as Ctrl
+  [Serviços de aplicação\n(com.example.aluguel.service)] as Svc
+  [Repositórios JPA\n(Micronaut Data)] as Repo
+}
+
+database "Persistência" as DB {
+  [H2 arquivo\n(perfil default dev)] as H2
+  [PostgreSQL\n(Docker ou gerenciado)] as PG
+}
+
+Web -down-> Http : HTTP(S)\nJSON **/api/***\nBearer JWT após login
+
+Http -down-> Sec : filtro JWT
+Sec -down-> Ctrl
+Ctrl -down-> Svc
+Svc -down-> Repo
+Repo -down-> H2 : JDBC\n(perfil default)
+Repo -down-> PG : JDBC\n(perfil postgres / produção)
+
+note bottom of Web
+  **Dev:** Vite em :5173 com **proxy** /api → API :8080.
+  **Prod (Vercel):** só arquivos estáticos; o browser
+  chama a URL pública da API (variável VITE_API_URL).
+end note
+
+note right of PG
+  Em produção alvo: PostgreSQL na nuvem
+  (não H2 em arquivo).
+end note
+
+@enduml

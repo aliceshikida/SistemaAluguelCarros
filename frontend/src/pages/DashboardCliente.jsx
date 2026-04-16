@@ -2,6 +2,14 @@ import { useEffect, useMemo, useState } from 'react';
 import api from '../api/client';
 import StatusBadge from '../components/StatusBadge';
 
+const RESUMO = [
+  ['Solicitado', 'SOLICITADO'],
+  ['Em análise', 'EM_ANALISE_FINANCEIRA'],
+  ['Aprovado', 'APROVADO'],
+  ['Reprovado', 'REPROVADO'],
+  ['Cancelado', 'CANCELADO'],
+];
+
 export default function DashboardCliente() {
   const [pedidos, setPedidos] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -13,7 +21,7 @@ export default function DashboardCliente() {
       setLoading(true);
       try {
         const { data } = await api.get('/api/pedidos');
-        if (!cancel) setPedidos(data);
+        if (!cancel) setPedidos(Array.isArray(data) ? data : []);
       } catch {
         if (!cancel) setErr('Não foi possível carregar os pedidos.');
       } finally {
@@ -26,7 +34,7 @@ export default function DashboardCliente() {
   }, []);
 
   const counts = useMemo(() => {
-    const c = { PENDENTE: 0, APROVADO: 0, REJEITADO: 0, CANCELADO: 0 };
+    const c = Object.fromEntries(RESUMO.map(([, st]) => [st, 0]));
     pedidos.forEach((p) => {
       if (c[p.status] !== undefined) c[p.status] += 1;
     });
@@ -41,19 +49,14 @@ export default function DashboardCliente() {
         {loading ? (
             <p className="mt-8 text-slate-500">Carregando…</p>
         ) : (
-            <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {[
-                ['Pendente', counts.PENDENTE, 'PENDENTE'],
-                ['Aprovado', counts.APROVADO, 'APROVADO'],
-                ['Rejeitado', counts.REJEITADO, 'REJEITADO'],
-                ['Cancelado', counts.CANCELADO, 'CANCELADO'],
-              ].map(([label, n, st]) => (
+            <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+              {RESUMO.map(([label, st]) => (
                   <div key={st} className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-medium text-slate-500">{label}</span>
                       <StatusBadge status={st} />
                     </div>
-                    <p className="mt-3 text-3xl font-bold text-slate-900">{n}</p>
+                    <p className="mt-3 text-3xl font-bold text-slate-900">{counts[st] ?? 0}</p>
                   </div>
               ))}
             </div>

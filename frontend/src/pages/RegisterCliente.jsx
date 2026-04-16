@@ -2,15 +2,16 @@ import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import ValidationNotice from '../components/ValidationNotice';
-import { isValidCpf } from '../utils/cpf';
+import { cpfDigits, isValidCpf } from '../utils/cpf';
 import { isValidRg, RG_INVALIDO_MSG } from '../utils/rg';
 import { isValidLoginId, LOGIN_INVALIDO_MSG } from '../utils/login';
 import { isOfflineError, OFFLINE_MSG } from '../utils/httpErrors';
+import { maskCpfInput, maskRgInput } from '../utils/masks';
 
 const emptyRend = () => ({ empregadorNome: '', valor: '', descricao: '' });
 
 export default function RegisterCliente() {
-  const { register } = useAuth();
+  const { registerCliente, registerAgente } = useAuth();
   const navigate = useNavigate();
   const [form, setForm] = useState({
     tipoUsuario: 'CLIENTE',
@@ -71,42 +72,65 @@ export default function RegisterCliente() {
       setErr('Nome, login e senha são obrigatórios.');
       return;
     }
+    if (form.tipoUsuario === 'CLIENTE') {
+      if (!form.cpf.trim() || !isValidCpf(form.cpf)) {
+        setErr('Informe um CPF válido com 11 dígitos.');
+        return;
+      }
+      if (!form.rg.trim() || !form.endereco.trim() || !form.profissao.trim()) {
+        setErr('CPF, RG, endereço e profissão são obrigatórios para cliente.');
+        return;
+      }
+    }
     if (form.tipoUsuario === 'AGENTE' && !form.tipoAgente) {
       setErr('Selecione o tipo de agente.');
       return;
     }
-    const rendPayload = rendimentos
-        .filter((r) => r.empregadorNome?.trim())
-        .map((r) => ({
-          empregadorNome: r.empregadorNome.trim(),
-          valor: r.valor === '' ? null : Number(r.valor),
-          descricao: r.descricao?.trim() || null,
-        }));
-    if (form.tipoUsuario === 'CLIENTE' && rendPayload.length > 3) {
-      setErr('Máximo de 3 rendimentos.');
+    if (form.tipoUsuario === 'CLIENTE' && rendimentos.length > 3) {
+      setErr('Máximo de 3 linhas de rendimento.');
       return;
     }
-    if (!isValidLoginId(form.login)) return;
-    if (form.tipoUsuario === 'CLIENTE' && form.cpf.trim() && !isValidCpf(form.cpf)) return;
-    if (form.tipoUsuario === 'CLIENTE' && form.rg.trim() && !isValidRg(form.rg)) return;
+    if (!isValidLoginId(form.login)) {
+      setErr(LOGIN_INVALIDO_MSG);
+      return;
+    }
+    if (form.tipoUsuario === 'CLIENTE' && form.rg.trim() && !isValidRg(form.rg)) {
+      setErr(RG_INVALIDO_MSG);
+      return;
+    }
     setLoading(true);
     try {
-      await register({
-        tipoUsuario: form.tipoUsuario,
-        tipoAgente: form.tipoUsuario === 'AGENTE' ? form.tipoAgente : null,
-        nome: form.nome.trim(),
-        endereco: form.endereco.trim(),
-        login: form.login.trim(),
-        senha: form.senha,
-        rg: form.tipoUsuario === 'CLIENTE' ? form.rg.trim() : null,
-        cpf: form.tipoUsuario === 'CLIENTE' ? form.cpf.trim() : null,
-        profissao: form.tipoUsuario === 'CLIENTE' ? form.profissao.trim() : null,
-        rendimentos: form.tipoUsuario === 'CLIENTE' ? rendPayload : [],
-        nomeFantasia: form.tipoUsuario === 'AGENTE' ? form.nomeFantasia.trim() : null,
-        cnpj: form.tipoUsuario === 'AGENTE' ? form.cnpj.trim() : null,
-        idAgente:
-            form.tipoUsuario === 'AGENTE' && form.idAgente !== '' ? Number(form.idAgente) : null,
-      });
+      if (form.tipoUsuario === 'CLIENTE') {
+        const empregadores = rendimentos
+            .filter((r) => r.empregadorNome?.trim())
+            .map((r) => ({ nome: r.empregadorNome.trim() }));
+        const rends = rendimentos
+            .filter((r) => r.valor !== '' && Number(r.valor) > 0)
+            .map((r) => ({
+              valor: Number(r.valor),
+              descricao: r.descricao?.trim() || null,
+            }));
+        await registerCliente({
+          login: form.login.trim().toLowerCase(),
+          senha: form.senha,
+          perfil: {
+            nome: form.nome.trim(),
+            cpf: cpfDigits(form.cpf),
+            rg: form.rg.trim(),
+            endereco: form.endereco.trim(),
+            profissao: form.profissao.trim(),
+            empregadores,
+            rendimentos: rends,
+          },
+        });
+      } else {
+        await registerAgente({
+          login: form.login.trim().toLowerCase(),
+          senha: form.senha,
+          papel: form.tipoAgente,
+          nomeInstituicao: (form.nomeFantasia.trim() || form.nome.trim()),
+        });
+      }
       navigate('/login');
     } catch (ex) {
       if (isOfflineError(ex)) {
@@ -169,8 +193,11 @@ export default function RegisterCliente() {
                 />
               </div>
               <div className="sm:col-span-2">
-                <label className="text-sm font-medium text-slate-700">Endereço</label>
+                <label className="text-sm font-medium text-slate-700">
+                  Endereço{form.tipoUsuario === 'CLIENTE' ? ' *' : ''}
+                </label>
                 <input
+                    required={form.tipoUsuario === 'CLIENTE'}
                     className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
                     value={form.endereco}
                     onChange={(e) => setForm((f) => ({ ...f, endereco: e.target.value }))}
@@ -204,30 +231,38 @@ export default function RegisterCliente() {
               {form.tipoUsuario === 'CLIENTE' ? (
                   <>
                     <div>
-                      <label className="text-sm font-medium text-slate-700">RG</label>
+                      <label className="text-sm font-medium text-slate-700">RG *</label>
                       <input
+                          required
+                          placeholder="Ex.: MG-12.345.678"
+                          autoComplete="off"
                           className={`mt-1 w-full rounded-lg border px-3 py-2 ${
                             rgFieldError ? 'border-red-400' : 'border-slate-300'
                           }`}
                           value={form.rg}
-                          onChange={(e) => setForm((f) => ({ ...f, rg: e.target.value }))}
+                          onChange={(e) => setForm((f) => ({ ...f, rg: maskRgInput(e.target.value) }))}
                       />
                       <ValidationNotice message={rgFieldError} />
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-slate-700">CPF</label>
+                      <label className="text-sm font-medium text-slate-700">CPF *</label>
                       <input
+                          required
+                          placeholder="000.000.000-00"
+                          inputMode="numeric"
+                          autoComplete="off"
                           className={`mt-1 w-full rounded-lg border px-3 py-2 ${
                             cpfFieldError ? 'border-red-400' : 'border-slate-300'
                           }`}
                           value={form.cpf}
-                          onChange={(e) => setForm((f) => ({ ...f, cpf: e.target.value }))}
+                          onChange={(e) => setForm((f) => ({ ...f, cpf: maskCpfInput(e.target.value) }))}
                       />
                       <ValidationNotice message={cpfFieldError} />
                     </div>
                     <div className="sm:col-span-2">
-                      <label className="text-sm font-medium text-slate-700">Profissão</label>
+                      <label className="text-sm font-medium text-slate-700">Profissão *</label>
                       <input
+                          required
                           className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"
                           value={form.profissao}
                           onChange={(e) => setForm((f) => ({ ...f, profissao: e.target.value }))}

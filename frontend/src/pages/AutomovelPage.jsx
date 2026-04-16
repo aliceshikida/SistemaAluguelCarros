@@ -4,9 +4,10 @@ import { useAuth } from '../context/AuthContext';
 
 export default function AutomovelPage() {
   const { auth } = useAuth();
-  const podeEditar = auth?.role === 'CLIENTE';
+  const podeEditar = auth?.role === 'EMPRESA' || auth?.role === 'BANCO';
 
   const [lista, setLista] = useState([]);
+  const [perfil, setPerfil] = useState(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
   const [modal, setModal] = useState(null);
@@ -16,7 +17,6 @@ export default function AutomovelPage() {
     marca: '',
     modelo: '',
     placa: '',
-    empresaId: '',
   });
   const [saving, setSaving] = useState(false);
 
@@ -25,7 +25,16 @@ export default function AutomovelPage() {
     setErr('');
     try {
       const { data } = await api.get('/api/automoveis');
-      setLista(data);
+      setLista(Array.isArray(data) ? data : []);
+      if (podeEditar) {
+        try {
+          const { data: me } = await api.get('/api/me');
+          setPerfil(me);
+        } catch {
+          setPerfil(null);
+          setErr('Não foi possível obter perfil (empresa/banco) para cadastro.');
+        }
+      }
     } catch {
       setErr('Falha ao carregar automóveis.');
     } finally {
@@ -37,16 +46,46 @@ export default function AutomovelPage() {
     load();
   }, [load]);
 
+  function buildProprietarioBody() {
+    if (auth?.role === 'EMPRESA') {
+      return {
+        tipoProprietario: 'EMPRESA',
+        proprietarioEmpresaId: perfil?.empresaId ?? null,
+        proprietarioBancoId: null,
+        proprietarioClienteId: null,
+      };
+    }
+    if (auth?.role === 'BANCO') {
+      return {
+        tipoProprietario: 'BANCO',
+        proprietarioBancoId: perfil?.bancoId ?? null,
+        proprietarioEmpresaId: null,
+        proprietarioClienteId: null,
+      };
+    }
+    return null;
+  }
+
   async function salvar(e) {
     e.preventDefault();
+    const prop = buildProprietarioBody();
+    if (!prop?.tipoProprietario || (prop.tipoProprietario === 'EMPRESA' && !prop.proprietarioEmpresaId)) {
+      setErr('Perfil empresa não disponível. Faça login novamente ou contate o suporte.');
+      return;
+    }
+    if (prop.tipoProprietario === 'BANCO' && !prop.proprietarioBancoId) {
+      setErr('Perfil banco não disponível. Faça login novamente ou contate o suporte.');
+      return;
+    }
     setSaving(true);
     try {
       const body = {
-        matricula: form.matricula,
+        matricula: form.matricula.trim(),
         ano: Number(form.ano),
-        marca: form.marca,
-        modelo: form.modelo,
-        placa: form.placa,
+        marca: form.marca.trim(),
+        modelo: form.modelo.trim(),
+        placa: form.placa.trim(),
+        ...prop,
       };
       if (modal?.automovel) {
         await api.put(`/api/automoveis/${modal.automovel.id}`, body);
@@ -78,6 +117,13 @@ export default function AutomovelPage() {
     }
   }
 
+  function proprietarioLabel(a) {
+    if (a.tipoProprietario === 'CLIENTE') return `Cliente #${a.proprietarioClienteId ?? '—'}`;
+    if (a.tipoProprietario === 'EMPRESA') return `Empresa #${a.proprietarioEmpresaId ?? '—'}`;
+    if (a.tipoProprietario === 'BANCO') return `Banco #${a.proprietarioBancoId ?? '—'}`;
+    return a.tipoProprietario ?? '—';
+  }
+
   return (
       <div>
         <div className="flex flex-wrap items-center justify-between gap-4">
@@ -86,7 +132,8 @@ export default function AutomovelPage() {
             <p className="mt-1 text-slate-600">Frota disponível para pedidos de aluguel.</p>
             {!podeEditar && (
                 <p className="mt-1 text-sm text-amber-700">
-                  Para cadastrar automóvel, entre com um usuário CLIENTE.
+                  Cadastro e edição de veículos são feitos por usuários <strong>empresa</strong> ou{' '}
+                  <strong>banco</strong>.
                 </p>
             )}
           </div>
@@ -94,7 +141,7 @@ export default function AutomovelPage() {
               <button
                   type="button"
                   onClick={() => {
-                    setForm({ matricula: '', ano: '', marca: '', modelo: '', placa: '', empresaId: '' });
+                    setForm({ matricula: '', ano: '', marca: '', modelo: '', placa: '' });
                     setModal({ novo: true });
                   }}
                   className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-indigo-700"
@@ -115,7 +162,7 @@ export default function AutomovelPage() {
                   <th className="px-4 py-3 text-left font-semibold">Ano</th>
                   <th className="px-4 py-3 text-left font-semibold">Marca / Modelo</th>
                   <th className="px-4 py-3 text-left font-semibold">Placa</th>
-                  <th className="px-4 py-3 text-left font-semibold">Empresa (id)</th>
+                  <th className="px-4 py-3 text-left font-semibold">Proprietário</th>
                   {podeEditar && <th className="px-4 py-3 text-right font-semibold">Ações</th>}
                 </tr>
                 </thead>
@@ -128,7 +175,7 @@ export default function AutomovelPage() {
                         {a.marca} {a.modelo}
                       </td>
                       <td className="px-4 py-3">{a.placa}</td>
-                      <td className="px-4 py-3 text-slate-600">{a.empresaId ?? '—'}</td>
+                      <td className="px-4 py-3 text-slate-600">{proprietarioLabel(a)}</td>
                       {podeEditar && (
                           <td className="px-4 py-3 text-right">
                             <button
@@ -141,7 +188,6 @@ export default function AutomovelPage() {
                                     marca: a.marca,
                                     modelo: a.modelo,
                                     placa: a.placa,
-                                    empresaId: String(a.empresaId ?? ''),
                                   });
                                   setModal({ automovel: a });
                                 }}
@@ -164,7 +210,7 @@ export default function AutomovelPage() {
             </div>
         )}
 
-        {modal && (
+        {modal && podeEditar && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
               <form onSubmit={salvar} className="w-full max-w-lg rounded-xl bg-white p-6 shadow-xl">
                 <h2 className="text-lg font-semibold">
@@ -218,7 +264,8 @@ export default function AutomovelPage() {
                     />
                   </div>
                   <p className="sm:col-span-2 text-xs text-slate-500">
-                    Este automóvel ficará disponível para pedidos de aluguel.
+                    O proprietário será sua {auth?.role === 'BANCO' ? 'instituição bancária' : 'empresa'} conforme o
+                    cadastro vinculado ao login.
                   </p>
                 </div>
                 <div className="mt-6 flex justify-end gap-2">

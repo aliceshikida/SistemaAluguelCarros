@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: aluguel-postgres
+    environment:
+      POSTGRES_USER: aluguel
+      POSTGRES_PASSWORD: aluguel
+      POSTGRES_DB: aluguel
+    ports:
+      - "5432:5432"
+    volumes:
+      - aluguel_pgdata:/var/lib/postgresql/data
+
+volumes:
+  aluguel_pgdata:

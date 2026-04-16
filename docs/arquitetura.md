@@ -1,22 +1,40 @@
-# Arquitetura adotada
+# Arquitetura do sistema
 
-## Stack escolhida
-- Backend: Node.js + Express
-- Frontend: HTML + CSS + JavaScript puro
-- Banco de dados: SQLite
+Documento resumido; detalhes de execução e rotas estão no [README.md](../README.md) na raiz do repositório.
 
-## Justificativa
-Stack simples e adequada para laboratório acadêmico: fácil de rodar, pouca dependência externa e foco em modelagem e regras de negócio.
+## Stack
 
-## Camadas do backend
-- `routes`: mapeamento dos endpoints REST.
-- `controller`: entrada/saída HTTP.
-- `service`: regras de negócio.
-- `repository`: persistência no SQLite.
-- `model`: documentação e enums de domínio.
-- `dto`: exemplos de payload.
-- `config`, `exception`, `middleware`: infraestrutura e segurança.
+| Camada | Tecnologia |
+| --- | --- |
+| **Backend** | Java 17, Micronaut 4 (HTTP, JPA, Security JWT), Maven |
+| **Frontend** | React 19, Vite 8, Tailwind CSS 4.2, Axios, React Router |
+| **Banco (dev)** | H2 (arquivo) ou PostgreSQL via Docker Compose |
+| **Banco (produção alvo)** | PostgreSQL gerenciado (recomendado) |
 
-## Subsistemas do enunciado
-1. Gestão de pedidos e contratos (backend).
-2. Construção dinâmica das páginas web (frontend).
+## Backend (pacote `com.example.aluguel`)
+
+- **`controller`:** endpoints REST, validação de entrada, `@Secured` com `ROLE_CLIENTE`, `ROLE_EMPRESA`, `ROLE_BANCO`.
+- **`service`:** regras de negócio e autorização usando `Authentication`.
+- **`repository`:** Micronaut Data JPA.
+- **`model`:** entidades Hibernate (`Usuario`, `Cliente`, `Empresa`, `Banco`, `Automovel`, `PedidoAluguel`, `Contrato`, `ContratoCredito`, etc.).
+- **`dto`:** contratos JSON (Serde).
+- **`security`:** login por usuário/senha, BCrypt, emissão de JWT.
+- **`bootstrap`:** dados de demonstração opcionais no startup (`app.dev.seed.enabled`).
+
+## Frontend (`frontend/src`)
+
+- **`api/client.js`:** cliente HTTP com token Bearer.
+- **`context/AuthContext.jsx`:** sessão e decodificação de papéis a partir do JWT.
+- **`pages/`:** telas (login, cadastro, dashboards, pedidos, automóveis, contratos, créditos).
+- **`components/`:** layout, sidebar, rotas protegidas, badges de status.
+
+Em **desenvolvimento**, o Vite faz **proxy** de `/api` para o backend em `127.0.0.1:8080`. Em **produção no Vercel**, o build é estático; a API fica em **outro host** e o front usa a variável **`VITE_API_URL`**.
+
+## Diagramas UML (PlantUML)
+
+Arquivos em [Documentação/](Documentação/): classes, componentes, pacotes, implantação (desenvolvimento local **e** visão de produção com Vercel).
+
+## Testes
+
+- **Backend:** JUnit 5 + Micronaut Test (`backend/src/test`).
+- **Frontend:** Vitest + Testing Library (`frontend`, `npm test`).

@@ -1,42 +1,35 @@
-## Micronaut 4.10.10 Documentation
+# Backend — Sistema de Aluguel de Carros
 
-- [User Guide](https://docs.micronaut.io/4.10.10/guide/index.html)
-- [API Reference](https://docs.micronaut.io/4.10.10/api/index.html)
-- [Configuration Reference](https://docs.micronaut.io/4.10.10/guide/configurationreference.html)
-- [Micronaut Guides](https://guides.micronaut.io/index.html)
----
+API **Micronaut 4** (Java 17), **MVC** em `com.example.aluguel`, com **JWT** (`/api/auth/login`), papéis **CLIENTE / EMPRESA / BANCO** e CRUD de **automóveis**.
 
-- [Micronaut Maven Plugin documentation](https://micronaut-projects.github.io/micronaut-maven-plugin/latest/)
-## Feature micronaut-aot documentation
+## Executar
 
+Defina `JAVA_HOME` para **JDK 17** e, na pasta deste módulo:
 
-- [Micronaut AOT documentation](https://micronaut-projects.github.io/micronaut-aot/latest/guide/)
+```powershell
+.\mvnw.bat mn:run
+```
 
+Variável opcional para o segredo JWT (recomendado fora do repositório):
 
-## Feature jdbc-hikari documentation
+```powershell
+$env:JWT_SECRET = "um-segredo-longo-e-aleatorio-para-desenvolvimento"
+.\mvnw.bat mn:run
+```
 
+Perfil PostgreSQL (após `docker compose up -d` na raiz):
 
-- [Micronaut Hikari JDBC Connection Pool documentation](https://micronaut-projects.github.io/micronaut-sql/latest/guide/index.html#jdbc)
+```powershell
+$env:MICRONAUT_ENVIRONMENTS = "postgres"
+.\mvnw.bat mn:run
+```
 
+Após mudanças de modelo (Etapa 2 em diante), apague a pasta `backend/data/` se usar H2 em arquivo, para o Hibernate recriar tabelas (`Usuario`, pedidos, contratos, etc.).
 
-## Feature views-thymeleaf documentation
+## Testes
 
+```powershell
+.\mvnw.bat test
+```
 
-- [Micronaut Thymeleaf Views documentation](https://micronaut-projects.github.io/micronaut-views/latest/guide/index.html#thymeleaf)
-
-
-- [https://www.thymeleaf.org/](https://www.thymeleaf.org/)
-
-
-## Feature maven-enforcer-plugin documentation
-
-
-- [https://maven.apache.org/enforcer/maven-enforcer-plugin/](https://maven.apache.org/enforcer/maven-enforcer-plugin/)
-
-
-## Feature serialization-jackson documentation
-
-
-- [Micronaut Serialization Jackson Core documentation](https://micronaut-projects.github.io/micronaut-serialization/latest/guide/)
-
-
+Documentação completa e tabela de endpoints: [README.md](../README.md) na raiz do repositório.

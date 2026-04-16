@@ -2,6 +2,15 @@ import { useEffect, useMemo, useState } from 'react';
 import api from '../api/client';
 import StatusBadge from '../components/StatusBadge';
 
+const RESUMO_PEDIDOS = [
+  ['Solicitado', 'SOLICITADO'],
+  ['Em análise', 'EM_ANALISE_FINANCEIRA'],
+  ['Aprovado', 'APROVADO'],
+  ['Reprovado', 'REPROVADO'],
+  ['Cancelado', 'CANCELADO'],
+  ['Concluído', 'CONCLUIDO'],
+];
+
 export default function DashboardAgente() {
   const [pedidos, setPedidos] = useState([]);
   const [contratos, setContratos] = useState([]);
@@ -14,8 +23,8 @@ export default function DashboardAgente() {
       try {
         const [pRes, cRes] = await Promise.all([api.get('/api/pedidos'), api.get('/api/contratos')]);
         if (!cancel) {
-          setPedidos(pRes.data);
-          setContratos(cRes.data);
+          setPedidos(Array.isArray(pRes.data) ? pRes.data : []);
+          setContratos(Array.isArray(cRes.data) ? cRes.data : []);
         }
       } catch {
         if (!cancel) {
@@ -32,7 +41,7 @@ export default function DashboardAgente() {
   }, []);
 
   const counts = useMemo(() => {
-    const c = { PENDENTE: 0, APROVADO: 0, REJEITADO: 0, CANCELADO: 0 };
+    const c = Object.fromEntries(RESUMO_PEDIDOS.map(([, st]) => [st, 0]));
     pedidos.forEach((p) => {
       if (c[p.status] !== undefined) c[p.status] += 1;
     });
@@ -47,19 +56,14 @@ export default function DashboardAgente() {
             <p className="mt-8 text-slate-500">Carregando…</p>
         ) : (
             <>
-              <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                {[
-                  ['Pendentes', counts.PENDENTE, 'PENDENTE'],
-                  ['Aprovados', counts.APROVADO, 'APROVADO'],
-                  ['Rejeitados', counts.REJEITADO, 'REJEITADO'],
-                  ['Cancelados', counts.CANCELADO, 'CANCELADO'],
-                ].map(([label, n, st]) => (
+              <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+                {RESUMO_PEDIDOS.map(([label, st]) => (
                     <div key={st} className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
                       <div className="flex items-center justify-between">
                         <span className="text-sm font-medium text-slate-500">{label}</span>
                         <StatusBadge status={st} />
                       </div>
-                      <p className="mt-3 text-3xl font-bold text-slate-900">{n}</p>
+                      <p className="mt-3 text-3xl font-bold text-slate-900">{counts[st] ?? 0}</p>
                     </div>
                 ))}
               </div>

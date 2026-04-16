@@ -9,8 +9,8 @@ const linkClass = ({ isActive }) =>
 export default function Sidebar() {
     const { auth } = useAuth();
     const isCliente = auth?.role === 'CLIENTE';
-    const isAgente = auth?.role === 'AGENTE';
-    const banco = isAgente && auth?.tipoAgente === 'BANCO';
+    const isAgente = auth?.role === 'EMPRESA' || auth?.role === 'BANCO';
+    const banco = auth?.role === 'BANCO';
 
     return (
         <aside className="flex w-64 flex-col border-r border-slate-800 bg-slate-950 text-slate-100">

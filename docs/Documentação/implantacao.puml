@@ -1,0 +1,83 @@
+@startuml diagrama-implantacao
+title Diagrama de Implantação — 1) Desenvolvimento local
+
+node "Máquina do desenvolvedor" as Dev {
+  artifact "JVM 17" as Jvm {
+    [Aplicação Micronaut\n( API :8080 )] as App
+  }
+
+  artifact "Node.js (opcional)" as Node {
+    [Vite dev server\n( :5173 )] as Vite
+  }
+
+  artifact "Docker Engine (opcional)" as Dock {
+    [Container PostgreSQL 16\npostgres:16-alpine] as Pg
+    [Volume Docker\naluguel_pgdata] as Vol
+  }
+
+  folder "Arquivo H2\n(./data/aluguel-dev…)" as H2File
+}
+
+cloud "Internet" as Net {
+  [Navegador] as Browser
+}
+
+Browser -down-> Vite : http://localhost:5173\n(SPA + proxy /api → 8080)
+Browser ..> App : mesma máquina;\nchamadas /api via proxy Vite
+App -down-> H2File : JDBC H2\n(perfil default)
+App -down-> Pg : JDBC :5432\n(perfil postgres)
+Pg -right-> Vol : dados
+
+note bottom of Vite
+  **vite.config.js** encaminha /api para 127.0.0.1:8080.
+  Sem build de produção neste modo.
+end note
+
+note bottom of Pg
+  Subir com: **docker compose up -d**
+  na raiz do repositório.
+end note
+
+newpage
+
+title Diagrama de Implantação — 2) Produção (alvo): Vercel + API + PostgreSQL
+
+cloud "Internet" as Net2 {
+  actor "Usuário" as User
+}
+
+cloud "Vercel" as Vercel {
+  artifact "SPA React\n(build estático: npm run build)" as Static
+  note right of Static
+    Hospeda apenas HTML/CSS/JS.
+    **VITE_API_URL** = URL pública HTTPS
+    da API (sem barra final).
+  end note
+}
+
+node "Hospedagem da API (JVM)" as ApiCloud {
+  artifact "Micronaut\n(fat JAR ou container)" as Api
+  note bottom of Api
+    O Micronaut **não** executa como
+    serverless Node no Vercel; use
+    PaaS/VPS/containers (Railway, Render,
+    Fly.io, Azure, AWS, etc.).
+  end note
+}
+
+database "PostgreSQL\n(gerenciado recomendado)" as PGProd
+
+User -down-> Static : HTTPS\n(carrega SPA)
+User -down-> Api : HTTPS\nJSON **/api/***\n(CORS + JWT Bearer)
+
+Static ..> Api : **não** há chamadas server-side\nentre Vercel e a API;\no **browser** chama a API diretamente.
+
+Api -down-> PGProd : JDBC (TLS comum em produção)
+
+note bottom of PGProd
+  H2 só para desenvolvimento.
+  Configure **CORS** na API com a origem
+  do domínio Vercel (ex.: *.vercel.app).
+end note
+
+@enduml

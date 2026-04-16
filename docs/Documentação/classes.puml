@@ -1,0 +1,79 @@
+@startuml diagrama-classes
+skinparam classAttributeIconSize 0
+title Diagrama de Classes — Domínio principal (backend)
+
+package "com.example.aluguel.model" {
+  enum StatusPedido {
+    SOLICITADO
+    EM_ANALISE_FINANCEIRA
+    APROVADO
+    REPROVADO
+    CANCELADO
+    CONCLUIDO
+  }
+
+  class Usuario <<@Entity>> {
+    login
+    senhaHash
+    papel
+  }
+
+  class Cliente <<@Entity>> {
+    nome
+    cpf
+    rg
+    endereco
+    profissao
+  }
+
+  class PedidoAluguel <<@Entity>> {
+    dataInicio
+    dataFim
+    valorEstimado
+    observacaoCliente
+    parecerFinanceiro
+  }
+
+  class Contrato <<@Entity>> {
+    valorTotal
+    dataInicio
+    dataFim
+    observacao
+  }
+
+  class ContratoCredito <<@Entity>> {
+    valor
+    quantidadeParcelas
+    observacao
+  }
+
+  class Automovel <<@Entity>>
+  class Empresa <<@Entity>>
+  class Banco <<@Entity>>
+
+  Cliente "1" --> "1" Usuario
+  Empresa "1" --> "1" Usuario
+  Banco "1" --> "1" Usuario
+
+  PedidoAluguel "n" --> "1" Cliente
+  PedidoAluguel "n" --> "1" Automovel
+  PedidoAluguel --> StatusPedido
+
+  Contrato "1" --> "1" PedidoAluguel
+  Contrato "n" --> "1" Empresa
+  Contrato "1" --> "0..1" ContratoCredito : credito
+  ContratoCredito "n" --> "1" Banco
+}
+
+note bottom of PedidoAluguel
+  Fluxo: análise por empresa/banco,
+  contrato pela empresa,
+  crédito opcional pelo banco.
+end note
+
+note as N
+  Também no pacote **model**:
+  Rendimento, Empregador, **TipoProprietario** (automóvel), etc.
+end note
+
+@enduml
