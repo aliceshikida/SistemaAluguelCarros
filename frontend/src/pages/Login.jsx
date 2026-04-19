@@ -60,13 +60,6 @@ export default function Login() {
         <div className="w-full max-w-md rounded-2xl border border-slate-700 bg-white p-8 shadow-xl">
           <h1 className="text-center text-2xl font-bold text-slate-900">Entrar</h1>
           <p className="mt-1 text-center text-sm text-slate-500">Sistema de aluguel de automóveis</p>
-          <p className="mt-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-center text-xs text-slate-600">
-            Desenvolvimento: após subir o backend com seed, use por exemplo{' '}
-            <span className="font-mono text-slate-800">clientedemo</span> /{' '}
-            <span className="font-mono text-slate-800">senha123</span> (ou{' '}
-            <span className="font-mono">empresademo</span>, <span className="font-mono">bancodemo</span> — mesma senha).
-            Veja o README na raiz do repositório.
-          </p>
           <form onSubmit={onSubmit} className="mt-8 space-y-4">
             <div>
               <label className="block text-sm font-medium text-slate-700">Login</label>
@@ -104,7 +97,7 @@ export default function Login() {
           <p className="mt-6 text-center text-sm text-slate-600">
             Não tem conta?{' '}
             <Link to="/register" className="font-medium text-indigo-600 hover:text-indigo-500">
-              Cadastre-se como cliente
+              Cadastre-se
             </Link>
           </p>
         </div>
